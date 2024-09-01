@@ -1,0 +1,124 @@
+[2024-03-04 10:17:46][INFO][org.frameworkset.http.client.MoonshotAI] 
+{"id":"cmpl-d8cb11b563e440c7987813f1189f061f","object":"chat.completion","created":1595001,"model":"moonshot-v1-8k","choices":[{"index":0,"message":{"role":"assistant","content":" 您提供的链接指向的是一个名为 \"esdoc\" 的文档，它似乎是一个关于文件日志指南的页面。如果您需要关于这个页面的具体信息或者有关于文件日志管理的问题，请提供更多的上下文或者具体的问题，我会尽力帮助您。如果您需要我查看该页面的内容并提供信息，请确保该链接是公开可访问的，或者提供更多的细节。"},"finish_reason":"stop"}],"usage":{"prompt_tokens":82,"completion_tokens":79,"total_tokens":161}}
+
+
+
+ @Test
+    public void testChat(){
+
+
+        /**
+         * {
+         *     "id": "cmpl-afcdbbecc9764d0d92a39d97ab89f6c2",
+         *     "object": "chat.completion",
+         *     "created": 3972399,
+         *     "model": "moonshot-v1-8k",
+         *     "choices": [
+         *         {
+         *             "index": 0,
+         *             "message": {
+         *                 "role": "assistant",
+         *                 "content": " BBoss是一个开源的Java企业应用开发框架，它提供了丰富的功能，包括数据采集、数据处理、数据展示等。在数据采集方面，BBoss支持从多种数据源采集数据，包括数据库、Excel文件等。\n\n如果你想使用BBoss框架来采集Excel文件中的数据，你可能需要使用BBoss提供的Excel插件或者相关的API。这通常涉及到以下几个步骤：\n\n1. **添加依赖**：首先，你需要在你的项目中添加BBoss Excel插件的依赖。这通常通过在项目的`pom.xml`文件中添加相应的依赖项来实现。\n\n2. **读取Excel**：使用BBoss提供的API来读取Excel文件。这可能涉及到创建一个Excel文件的读取器，然后指定要读取的文件路径。\n\n3. **处理数据**：读取Excel文件后，你可以遍历文件中的数据，进行你需要的处理。BBoss可能提供了一些工具类来帮助你解析和处理Excel文件中的数据。\n\n4. **存储数据**：处理完数据后，你可以将数据存储到数据库或其他数据存储系统中。\n\n请注意，具体的API使用方法和步骤可能会随着BBoss版本的更新而有所变化。为了获取最准确的信息，建议查阅BBoss的官方文档或者查看相关的示例代码。如果你有具体的代码问题或者需要进一  步的帮助，可以提供更多的信息，我会尽力为你提供帮助。"
+         *             },
+         *             "finish_reason": "stop"
+         *         }
+         *     ],
+         *     "usage": {
+         *         "prompt_tokens": 88,
+         *         "completion_tokens": 275,
+         *         "total_tokens": 363
+         *     }
+         * }
+         */
+
+        Map<String,Object> headers = new LinkedHashMap<String,Object>();
+        headers.put("Authorization","Bearer sk-NmYophVVNhAyq7Op25UNMKxQj3O1ht6i0hT8IZJnthNsnis2");
+        InvokeContext invokeContext = new InvokeContext();
+        invokeContext.setHeaders(headers);
+        invokeContext.setResponseCharset(Consts.UTF_8);
+        String multiLine = """
+               {
+              "model": "moonshot-v1-8k",
+                "messages": [
+                   {"role": "system", "content": "你是 Kimi，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一些涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。"}
+             
+                ],
+                "temperature": 0.3
+                ,
+                "stream": false
+               }
+    """;
+        String res = HttpRequestProxy.sendJsonBody(multiLine,"v1/chat/completions",invokeContext);
+        logger.info(res);
+        multiLine = """
+               {
+              "model": "moonshot-v1-8k",
+                "messages": [
+                   {"role": "system", "content": "你是 Kimi，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一些涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。"},
+                   {"role": "user", "content": "https://esdoc.bbossgroups.com/#/filelog-guide"}
+             
+                ],
+                "temperature": 0.3
+                ,
+                "stream": false
+               }
+    """;
+        res = HttpRequestProxy.sendJsonBody(multiLine,"v1/chat/completions",invokeContext);
+        logger.info(res);
+
+        multiLine = """
+               {
+              "model": "moonshot-v1-8k",
+                "messages": [
+                   {"role": "system", "content": "你是 Kimi，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一些涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。"},
+                   {"role": "user", "content": "https://esdoc.bbossgroups.com/#/filelog-guide"}
+                  , {"role": "user", "content": "bboss采集excel"}
+             
+                ],
+                "temperature": 0.3
+                ,
+                "stream": false
+               }
+    """;
+        res = HttpRequestProxy.sendJsonBody(multiLine,"v1/chat/completions",invokeContext);
+        logger.info(res);
+
+
+        multiLine = """
+               {
+              "model": "moonshot-v1-8k",
+                "messages": [
+                   {"role": "system", "content": "你是 Kimi，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一些涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。"},
+                   {"role": "user", "content": "https://esdoc.bbossgroups.com/#/filelog-guide"}
+                  , {"role": "user", "content": "bboss采集excel"}
+                  , {"role": "user", "content": "bboss采集pdf"}
+             
+                ],
+                "temperature": 0.3
+                ,
+                "stream": false
+               }
+    """;
+        res = HttpRequestProxy.sendJsonBody(multiLine,"v1/chat/completions",invokeContext);
+        logger.info(res);
+        multiLine = """
+               {
+              "model": "moonshot-v1-8k",
+                "messages": [
+                   {"role": "system", "content": "你是 Kimi，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一些涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。"},
+                   {"role": "user", "content": "https://esdoc.bbossgroups.com/#/filelog-guide"}
+                  , {"role": "user", "content": "bboss采集excel"}
+                  , {"role": "user", "content": "bboss采集pdf"}
+                  , {"role": "user", "content": "从FTP采集excel"}
+             
+                ],
+                "temperature": 0.3
+                ,
+                "stream": false
+               }
+    """;
+        res = HttpRequestProxy.sendJsonBody(multiLine,"v1/chat/completions",invokeContext);
+        logger.info(res);
+ 
+
+    }
