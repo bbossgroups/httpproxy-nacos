@@ -15,9 +15,12 @@ package org.frameworkset.http.client;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +34,7 @@ import java.util.Map;
  * @version 1.0
  */
 public class HttpRequestProxyNacosTest {
+    private static Logger logger = LoggerFactory.getLogger(HttpRequestProxyNacosTest.class);
 	@Before
 	public void startPool(){
 //		HttpRequestProxy.startHttpPools("application.properties");
@@ -66,15 +70,15 @@ public class HttpRequestProxyNacosTest {
 			data = HttpRequestProxy.httpGetforString("schedule", "/testBBossIndexCrud");
 		}
 		catch (Exception e){
-			e.printStackTrace();
+            logger.error(e.getMessage(),e);
 		}
-		System.out.println(data);
+		logger.info(data);
 		do {
 			try {
 				data = HttpRequestProxy.httpGetforString("schedule","/testBBossIndexCrud");
-                System.out.println(data);
+                logger.info(data);
 			} catch (Exception e) {
-				e.printStackTrace();
+                logger.error(e.getMessage(),e);
 			}
 			try {
 				Thread.sleep(3000l);
@@ -89,16 +93,17 @@ public class HttpRequestProxyNacosTest {
 	@Test
 	public void testGetMap(){
 		Map data = HttpRequestProxy.httpGetforObject("schedule","/testBBossIndexCrud",Map.class);
-		System.out.println(data);
+		logger.info(SimpleStringUtil.object2json(data));
 		do {
 			try {
 				data = HttpRequestProxy.httpGetforObject("schedule","/testBBossIndexCrud",Map.class);
+                logger.info(SimpleStringUtil.object2json(data));
 //				data = HttpRequestProxy.httpPostForObject("report","/testBBossIndexCrud",(Map)null,Map.class);
 //				List<Map> datas = HttpRequestProxy.httpPostForList("report","/testBBossIndexCrud",(Map)null,Map.class);
 //				Set<Map> dataSet = HttpRequestProxy.httpPostForSet("report","/testBBossIndexCrud",(Map)null,Map.class);
 //				Map<String,Object> dataMap = HttpRequestProxy.httpPostForMap("report","/testBBossIndexCrud",(Map)null,String.class,Object.class);
 			} catch (Exception e) {
-				e.printStackTrace();
+                logger.error(e.getMessage(),e);
 			}
 			try {
 				Thread.sleep(3000l);
@@ -117,15 +122,15 @@ public class HttpRequestProxyNacosTest {
             data = HttpRequestProxy.httpGetforString("default", "/testBBossIndexCrud");
         }
         catch (Exception e){
-            e.printStackTrace();
+            logger.error(e.getMessage(),e);
         }
-        System.out.println(data);
+        logger.info(data);
         do {
             try {
                 data = HttpRequestProxy.httpGetforString("default","/testBBossIndexCrud");
-                System.out.println(data);
+                logger.info(data);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error(e.getMessage(),e);
             }
             try {
                 Thread.sleep(3000l);
@@ -140,17 +145,17 @@ public class HttpRequestProxyNacosTest {
     @Test
     public void testGetMapDefault(){
         Map data = HttpRequestProxy.httpGetforObject("default","/testBBossIndexCrud",Map.class);
-        System.out.println(data);
+        logger.info(SimpleStringUtil.object2json(data));
         do {
             try {
                 data = HttpRequestProxy.httpGetforObject("default","/testBBossIndexCrud",Map.class);
-                System.out.println(data);
+                logger.info(SimpleStringUtil.object2json(data));
 //				data = HttpRequestProxy.httpPostForObject("report","/testBBossIndexCrud",(Map)null,Map.class);
 //				List<Map> datas = HttpRequestProxy.httpPostForList("report","/testBBossIndexCrud",(Map)null,Map.class);
 //				Set<Map> dataSet = HttpRequestProxy.httpPostForSet("report","/testBBossIndexCrud",(Map)null,Map.class);
 //				Map<String,Object> dataMap = HttpRequestProxy.httpPostForMap("report","/testBBossIndexCrud",(Map)null,String.class,Object.class);
             } catch (Exception e) {
-                e.printStackTrace();
+               logger.error(e.getMessage(),e);
             }
             try {
                 Thread.sleep(3000l);

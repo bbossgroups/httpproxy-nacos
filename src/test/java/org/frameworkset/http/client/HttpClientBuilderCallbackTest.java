@@ -15,11 +15,13 @@ package org.frameworkset.http.client;
  * limitations under the License.
  */
 
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.protocol.HttpContext;
+
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpRequest;
+import org.apache.hc.core5.http.HttpRequestInterceptor;
+import org.apache.hc.core5.http.protocol.HttpContext;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.callback.HttpClientBuilderCallback;
 
@@ -47,13 +49,13 @@ public class HttpClientBuilderCallbackTest {
 		 */
 		final HttpRequestInterceptor interceptor = new HttpRequestInterceptor(){
 
-			public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+			public void process(HttpRequest request, EntityDetails entity, HttpContext context) throws HttpException, IOException {
 
 			}
 		};
 		HttpClientBuilderCallback httpClientBuilderCallback = new HttpClientBuilderCallback() {
 			public HttpClientBuilder customizeHttpClient(HttpClientBuilder builder, ClientConfiguration clientConfiguration) {
-				return builder.addInterceptorFirst(interceptor);
+				return builder.addRequestInterceptorLast(interceptor);
 			}
 		};
 
