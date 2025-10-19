@@ -15,6 +15,7 @@ package org.frameworkset.http.client.stream;
  * limitations under the License.
  */
 
+import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.spi.remote.http.ResponseUtil;
 import org.frameworkset.spi.remote.http.reactor.BaseStreamDataHandler;
@@ -140,6 +141,14 @@ public class StreamTest {
                         }
                         return false;
 
+                    }
+
+                    @Override
+                    public boolean handleException(Throwable throwable, FluxSink<String> sink) {
+                        logger.error("错误: " + throwable.getMessage(),throwable);
+                        sink.next(SimpleStringUtil.exceptionToString(throwable));
+                        sink.complete();
+                        return true;
                     }
                 })
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
