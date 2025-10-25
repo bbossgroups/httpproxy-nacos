@@ -19,15 +19,14 @@ import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.spi.remote.http.ResponseUtil;
 import org.frameworkset.spi.remote.http.reactor.BaseStreamDataHandler;
+import org.frameworkset.spi.remote.http.reactor.ServerEvent;
 import org.frameworkset.spi.remote.http.reactor.StreamDataHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author biaoping.yin
@@ -39,7 +38,10 @@ public class StreamTest {
         //加载配置文件，启动负载均衡器,应用中只需要执行一次
         HttpRequestProxy.startHttpPools("application-stream.properties");
 //        callDeepseekSimple();
-        callguijiSimple();
+//        callguijiSimple();
+//        qwenvl();
+//        qwenvlCompare();
+        qwenvl();
     }
     public static void callDeepseekSimple() throws InterruptedException {
         //定义问题变量
@@ -161,4 +163,153 @@ public class StreamTest {
         Thread.sleep(100000000);
     }
 
+    
+    public static void qwenvl() throws InterruptedException {
+        String message  = "介绍图片内容并计算结果";
+//		
+//		[
+//		{
+//			"type": "image_url",
+//				"image_url": {
+//			"url": "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg"
+//		},
+//		},
+//		{"type": "text", "text": "这道题怎么解答？"},
+//            ]
+        List content = new ArrayList<>();
+        Map contentData = new LinkedHashMap();
+        contentData.put("type", "image_url");
+        contentData.put("image_url", new HashMap<String, String>(){{
+            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        }});
+        content.add(contentData);
+//		content.add(new HashMap<String, Object>(){{
+//			put("type", "image_url");
+//			put("image_url", new HashMap<String, String>(){{
+//				put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+//			}});
+//		}});
+        contentData = new LinkedHashMap();
+        contentData.put("type", "text");
+        contentData.put("text", message);;
+        content.add(contentData);
+
+
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("model", "qwen3-vl-plus");
+
+        List<Map<String, Object>> messages = new ArrayList<>();
+        Map<String, Object> userMessage = new HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", content);
+        messages.add(userMessage);
+
+
+
+        requestMap.put("messages", messages);
+        requestMap.put("stream", true);
+
+        // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
+        Map extra_body = new LinkedHashMap();
+        extra_body.put("enable_thinking",true);
+        extra_body.put("thinking_budget",81920);
+        requestMap.put("extra_body",extra_body);
+
+//		{
+//				'enable_thinking': True,
+//				"thinking_budget": 81920},
+//		requestMap.put("max_tokens", 2048);
+//		requestMap.put("temperature", 0.7);
+        Flux<ServerEvent> flux = HttpRequestProxy.streamChatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+        flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                .doOnNext(chunk -> {
+                    if(!chunk.isDone())
+                        System.out.print(chunk.getData());
+                }) //打印流式调用返回的问题答案片段
+                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
+                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .subscribe();
+
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        Thread.sleep(100000000);
+
+    }
+    public static void qwenvlCompare() throws InterruptedException {
+        String message  = "介绍两个图片内容并比对相似度,以json格式返回结果";
+//		
+//		[
+//		{
+//			"type": "image_url",
+//				"image_url": {
+//			"url": "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg"
+//		},
+//		},
+//		{"type": "text", "text": "这道题怎么解答？"},
+//            ]
+        List content = new ArrayList<>();
+        Map contentData = new LinkedHashMap();
+        contentData.put("type", "image_url");
+        contentData.put("image_url", new HashMap<String, String>(){{
+            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        }});
+        content.add(contentData);
+
+        contentData = new LinkedHashMap();
+        contentData.put("type", "image_url");
+        contentData.put("image_url", new HashMap<String, String>(){{
+            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        }});
+        content.add(contentData);
+//		content.add(new HashMap<String, Object>(){{
+//			put("type", "image_url");
+//			put("image_url", new HashMap<String, String>(){{
+//				put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+//			}});
+//		}});
+        contentData = new LinkedHashMap();
+        contentData.put("type", "text");
+        contentData.put("text", message);;
+        content.add(contentData);
+
+
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("model", "qwen3-vl-plus");
+
+        List<Map<String, Object>> messages = new ArrayList<>();
+        Map<String, Object> userMessage = new HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", content);
+        messages.add(userMessage);
+
+
+
+        requestMap.put("messages", messages);
+        requestMap.put("stream", true);
+
+        // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
+        Map extra_body = new LinkedHashMap();
+        extra_body.put("enable_thinking",true);
+        extra_body.put("thinking_budget",81920);
+        requestMap.put("extra_body",extra_body);
+
+//		{
+//				'enable_thinking': True,
+//				"thinking_budget": 81920},
+//		requestMap.put("max_tokens", 2048);
+//		requestMap.put("temperature", 0.7);
+        Flux<ServerEvent> flux = HttpRequestProxy.streamChatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+        flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                .doOnNext(chunk -> {
+                    if(!chunk.isDone())
+                        System.out.print(chunk.getData());
+                }) //打印流式调用返回的问题答案片段
+                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
+                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .subscribe();
+
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        Thread.sleep(100000000);
+
+    }
+    
 }
