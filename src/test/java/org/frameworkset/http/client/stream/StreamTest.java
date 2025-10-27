@@ -40,8 +40,8 @@ public class StreamTest {
 //        callDeepseekSimple();
 //        callguijiSimple();
 //        qwenvl();
-//        qwenvlCompare();
-        qwenvl();
+        qwenvlCompare();
+//        qwenvl();
     }
     public static void callDeepseekSimple() throws InterruptedException {
         //定义问题变量
@@ -234,7 +234,7 @@ public class StreamTest {
         Thread.sleep(100000000);
 
     }
-    public static void qwenvlCompare() throws InterruptedException {
+    public static void qwenvlCompareStream() throws InterruptedException {
         String message  = "介绍两个图片内容并比对相似度,以json格式返回结果";
 //		
 //		[
@@ -310,6 +310,72 @@ public class StreamTest {
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         Thread.sleep(100000000);
 
+    }
+
+    public static void qwenvlCompare() throws InterruptedException {
+        String message  = "介绍两个图片内容并比对相似度,以json格式返回结果";
+//		
+//		[
+//		{
+//			"type": "image_url",
+//				"image_url": {
+//			"url": "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg"
+//		},
+//		},
+//		{"type": "text", "text": "这道题怎么解答？"},
+//            ]
+        List content = new ArrayList<>();
+        Map contentData = new LinkedHashMap();
+        contentData.put("type", "image_url");
+        contentData.put("image_url", new HashMap<String, String>(){{
+            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        }});
+        content.add(contentData);
+
+        contentData = new LinkedHashMap();
+        contentData.put("type", "image_url");
+        contentData.put("image_url", new HashMap<String, String>(){{
+            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        }});
+        content.add(contentData);
+//		content.add(new HashMap<String, Object>(){{
+//			put("type", "image_url");
+//			put("image_url", new HashMap<String, String>(){{
+//				put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+//			}});
+//		}});
+        contentData = new LinkedHashMap();
+        contentData.put("type", "text");
+        contentData.put("text", message);;
+        content.add(contentData);
+
+
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("model", "qwen3-vl-plus");
+
+        List<Map<String, Object>> messages = new ArrayList<>();
+        Map<String, Object> userMessage = new HashMap<>();
+        userMessage.put("role", "user");
+        userMessage.put("content", content);
+        messages.add(userMessage);
+
+
+
+        requestMap.put("messages", messages);
+        requestMap.put("stream", false);
+
+        // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
+        Map extra_body = new LinkedHashMap();
+        extra_body.put("enable_thinking",true);
+        extra_body.put("thinking_budget",81920);
+        requestMap.put("extra_body",extra_body);
+
+ 
+        Map flux = HttpRequestProxy.sendJsonBody("qwenvlplus",requestMap,"/compatible-mode/v1/chat/completions",Map.class);
+        logger.info(SimpleStringUtil.object2json( flux));
+
+        String data = HttpRequestProxy.sendJsonBody("qwenvlplus",requestMap,"/compatible-mode/v1/chat/completions",String.class);
+        logger.info(SimpleStringUtil.object2json( data));
     }
     
 }
