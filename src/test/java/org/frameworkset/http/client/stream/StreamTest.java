@@ -21,6 +21,7 @@ import org.frameworkset.spi.remote.http.ResponseUtil;
 import org.frameworkset.spi.remote.http.reactor.BaseStreamDataHandler;
 import org.frameworkset.spi.remote.http.reactor.ServerEvent;
 import org.frameworkset.spi.remote.http.reactor.StreamDataHandler;
+import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -122,7 +123,7 @@ public class StreamTest {
         //处理数据行,如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
         HttpRequestProxy.streamChatCompletion("/chat/completions",requestMap,new BaseStreamDataHandler<String>() {
                     @Override
-                    public boolean handle(String line, FluxSink<String> sink) {
+                    public boolean handle(String line, FluxSink<String> sink, BooleanWrapperInf firstEventTag) {
                         if (line.startsWith("data: ")) {
                             String data = line.substring(6).trim();
 
@@ -146,7 +147,7 @@ public class StreamTest {
                     }
 
                     @Override
-                    public boolean handleException(Throwable throwable, FluxSink<String> sink) {
+                    public boolean handleException(Throwable throwable, FluxSink<String> sink, BooleanWrapperInf firstEventTag) {
                         logger.error("错误: " + throwable.getMessage(),throwable);
                         sink.next(SimpleStringUtil.exceptionToString(throwable));
                         sink.complete();
