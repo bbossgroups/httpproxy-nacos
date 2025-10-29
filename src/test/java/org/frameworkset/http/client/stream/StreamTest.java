@@ -122,6 +122,14 @@ public class StreamTest {
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题，可以自定义每次返回的片段解析方法
         //处理数据行,如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
         HttpRequestProxy.streamChatCompletion("/chat/completions",requestMap,new BaseStreamDataHandler<String>() {
+                    /**
+                     * 处理数据行
+                     * @param line 数据行
+                     * @param sink 数据行处理结果
+                     * @param firstEventTag 是否是第一个事件标记，需要具体实现设置，如果为true，则表示当前数据行是第一个事件标记，否则不是第一个事件标记。
+                     *                      在接口方法实现中，在发送消息时，需检测是否为true，如果为true，需设置标记为false，同时将ServerEvent的first标记设置为true
+                     * @return
+                     */
                     @Override
                     public boolean handle(String line, FluxSink<String> sink, BooleanWrapperInf firstEventTag) {
                         if (line.startsWith("data: ")) {
@@ -133,6 +141,9 @@ public class StreamTest {
                             if (!data.isEmpty()) {
                                 String content = ResponseUtil.parseStreamContentFromData(data);
                                 if (content != null && !content.isEmpty()) {
+                                    if (firstEventTag.get()) {
+                                        firstEventTag.set(false);
+                                    }
                                     sink.next(content);
                                 }
                             }
@@ -146,9 +157,20 @@ public class StreamTest {
 
                     }
 
+                    /**
+                     * 处理异常
+                     * @param throwable 异常
+                     * @param sink 数据行处理结果
+                     * @param firstEventTag 是否是第一个事件标记，需要具体实现设置，如果为true，则表示当前数据行是第一个事件标记，否则不是第一个事件标记。
+                     *                      在接口方法实现中，在发送消息时，需检测是否为true，如果为true，需设置标记为false，同时将ServerEvent的first标记设置为true
+                     * @return
+                     */
                     @Override
                     public boolean handleException(Throwable throwable, FluxSink<String> sink, BooleanWrapperInf firstEventTag) {
                         logger.error("错误: " + throwable.getMessage(),throwable);
+                        if(firstEventTag.get()){
+                            firstEventTag.set(false);
+                        }
                         sink.next(SimpleStringUtil.exceptionToString(throwable));
                         sink.complete();
                         return true;
@@ -226,6 +248,9 @@ public class StreamTest {
                 .doOnNext(chunk -> {
                     if(!chunk.isDone())
                         System.out.print(chunk.getData());
+                    if(chunk.isFirst()){
+                        logger.info("ServerEvent is first event.");
+                    }
                 }) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
                 .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
