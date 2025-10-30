@@ -16,11 +16,11 @@ package org.frameworkset.http.client.stream;
  */
 
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.model.ServerEvent;
+import org.frameworkset.spi.ai.model.StreamData;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.spi.remote.http.ResponseUtil;
 import org.frameworkset.spi.remote.http.reactor.BaseStreamDataHandler;
-import org.frameworkset.spi.remote.http.reactor.ServerEvent;
-import org.frameworkset.spi.remote.http.reactor.StreamDataHandler;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,12 +139,12 @@ public class StreamTest {
                                 return true;
                             }
                             if (!data.isEmpty()) {
-                                String content = ResponseUtil.parseStreamContentFromData(data);
+                                StreamData content = ResponseUtil.parseStreamContentFromData(data);
                                 if (content != null && !content.isEmpty()) {
                                     if (firstEventTag.get()) {
                                         firstEventTag.set(false);
                                     }
-                                    sink.next(content);
+                                    sink.next(content.getData());
                                 }
                             }
                         }
