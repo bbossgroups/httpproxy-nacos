@@ -18,6 +18,7 @@ package org.frameworkset.http.client.stream;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.StreamData;
+import org.frameworkset.spi.ai.util.MessageBuilder;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.spi.remote.http.ResponseUtil;
 import org.frameworkset.spi.remote.http.reactor.BaseStreamDataHandler;
@@ -51,10 +52,8 @@ public class StreamTest {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", "deepseek-chat");//指定模型
 
-        List<Map<String, String>> messages = new ArrayList<>();
-        Map<String, String> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("content", message);
+        List<Map<String, Object>> messages = new ArrayList<>();
+        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
         messages.add(userMessage);
 
         requestMap.put("messages", messages);
@@ -81,10 +80,8 @@ public class StreamTest {
 //        requestMap.put("model", "deepseek-ai/DeepSeek-V3.2-Exp");//指定模型
         requestMap.put("model", "Qwen/Qwen3-Next-80B-A3B-Instruct");//指定模型
         
-        List<Map<String, String>> messages = new ArrayList<>();
-        Map<String, String> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("content", message);
+        List<Map<String, Object>> messages = new ArrayList<>();
+        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
         messages.add(userMessage);
 
         requestMap.put("messages", messages);
@@ -109,10 +106,8 @@ public class StreamTest {
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", "deepseek-chat");//指定模型
 
-        List<Map<String, String>> messages = new ArrayList<>();
-        Map<String, String> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("content", message);
+        List<Map<String, Object>> messages = new ArrayList<>();
+        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
         messages.add(userMessage);
 
         requestMap.put("messages", messages);
