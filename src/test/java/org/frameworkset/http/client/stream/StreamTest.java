@@ -345,39 +345,18 @@ public class StreamTest {
 //		},
 //		{"type": "text", "text": "这道题怎么解答？"},
 //            ]
-        List content = new ArrayList<>();
-        Map contentData = new LinkedHashMap();
-        contentData.put("type", "image_url");
-        contentData.put("image_url", new HashMap<String, String>(){{
-            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-        }});
-        content.add(contentData);
-
-        contentData = new LinkedHashMap();
-        contentData.put("type", "image_url");
-        contentData.put("image_url", new HashMap<String, String>(){{
-            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-        }});
-        content.add(contentData);
-//		content.add(new HashMap<String, Object>(){{
-//			put("type", "image_url");
-//			put("image_url", new HashMap<String, String>(){{
-//				put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-//			}});
-//		}});
-        contentData = new LinkedHashMap();
-        contentData.put("type", "text");
-        contentData.put("text", message);;
-        content.add(contentData);
+        
+        String[] images = new String[2];
+        images[0] = "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg";
+        images[1] = "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg";
+        
 
 
         Map<String, Object> requestMap = new HashMap<>();
         requestMap.put("model", "qwen3-vl-plus");
 
         List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("content", content);
+        Map<String, Object> userMessage = MessageBuilder.buildInputImagesMessage(message,images);     
         messages.add(userMessage);
 
 
@@ -392,6 +371,9 @@ public class StreamTest {
         requestMap.put("extra_body",extra_body);
 
  
+        ServerEvent serverEvent = HttpRequestProxy.chatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+        logger.info(SimpleStringUtil.object2json( serverEvent));
+        
         Map flux = HttpRequestProxy.sendJsonBody("qwenvlplus",requestMap,"/compatible-mode/v1/chat/completions",Map.class);
         logger.info(SimpleStringUtil.object2json( flux));
 
