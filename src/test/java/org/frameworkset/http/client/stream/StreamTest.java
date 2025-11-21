@@ -42,8 +42,9 @@ public class StreamTest {
 //        callDeepseekSimple();
 //        callguijiSimple();
 //        qwenvl();
-        qwenvlCompare();
+//        qwenvlCompare();
 //        qwenvl();
+        callChatDeepseekSimple();
     }
     public static void callDeepseekSimple() throws InterruptedException {
         //定义问题变量
@@ -67,6 +68,29 @@ public class StreamTest {
                 .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
                 .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
                 .subscribe();
+
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        Thread.sleep(100000000);
+    }
+
+
+    public static void callChatDeepseekSimple() throws InterruptedException {
+        //定义问题变量
+        String message = "介绍一下bboss jobflow";
+        //设置模型调用参数，
+        Map<String, Object> requestMap = new HashMap<>();
+        requestMap.put("model", "deepseek-chat");//指定模型
+
+        List<Map<String, Object>> messages = new ArrayList<>();
+        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
+        messages.add(userMessage);
+
+        requestMap.put("messages", messages);
+        requestMap.put("stream", false);
+        requestMap.put("max_tokens", 2048);
+        requestMap.put("temperature", 0.7);
+        //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
+        ServerEvent serverEvent = HttpRequestProxy.chatCompletionEvent("/chat/completions",requestMap);
 
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         Thread.sleep(100000000);
