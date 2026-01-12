@@ -15,19 +15,26 @@ package org.frameworkset.http.client.stream;
  * limitations under the License.
  */
 
+import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.SimpleStringUtil;
+import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.model.ChatAgentMessage;
+import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
 import org.frameworkset.spi.ai.model.ServerEvent;
 import org.frameworkset.spi.ai.model.StreamData;
+import org.frameworkset.spi.ai.util.AIAgentUtil;
+import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.MessageBuilder;
+import org.frameworkset.spi.reactor.BaseStreamDataHandler;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
 import org.frameworkset.spi.remote.http.ResponseUtil;
-import org.frameworkset.spi.remote.http.reactor.BaseStreamDataHandler;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -36,7 +43,7 @@ import java.util.*;
  */
 public class StreamTest {
     private static Logger logger = LoggerFactory.getLogger(StreamTest.class);
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, IOException {
         //加载配置文件，启动负载均衡器,应用中只需要执行一次
         HttpRequestProxy.startHttpPools("application-stream.properties");
 //        callDeepseekSimple();
@@ -44,7 +51,9 @@ public class StreamTest {
 //        qwenvl();
 //        qwenvlCompare();
 //        qwenvl();
-        callChatDeepseekSimple();
+//        callChatDeepseekSimple();
+//        qwenvJiutian();
+        chatByJiutian();
     }
     public static void callDeepseekSimple() throws InterruptedException {
         //定义问题变量
@@ -62,7 +71,7 @@ public class StreamTest {
         requestMap.put("max_tokens", 2048);
         requestMap.put("temperature", 0.7);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        HttpRequestProxy.streamChatCompletion("/chat/completions",requestMap)
+        AIAgentUtil.streamChatCompletion("/chat/completions",requestMap)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
@@ -90,7 +99,7 @@ public class StreamTest {
         requestMap.put("max_tokens", 2048);
         requestMap.put("temperature", 0.7);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        ServerEvent serverEvent = HttpRequestProxy.chatCompletionEvent("/chat/completions",requestMap);
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("/chat/completions",requestMap);
 
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         Thread.sleep(100000000);
@@ -113,7 +122,7 @@ public class StreamTest {
         requestMap.put("max_tokens", 2048);
         requestMap.put("temperature", 0.7);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        HttpRequestProxy.streamChatCompletion("guiji","/v1/chat/completions",requestMap)
+        AIAgentUtil.streamChatCompletion("guiji","/v1/chat/completions",requestMap)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
@@ -140,7 +149,7 @@ public class StreamTest {
         requestMap.put("temperature", 0.7);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题，可以自定义每次返回的片段解析方法
         //处理数据行,如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
-        HttpRequestProxy.streamChatCompletion("/chat/completions",requestMap,new BaseStreamDataHandler<String>() {
+        AIAgentUtil.streamChatCompletion("/chat/completions",requestMap,new BaseStreamDataHandler<String>() {
                     /**
                      * 处理数据行
                      * @param line 数据行
@@ -158,7 +167,7 @@ public class StreamTest {
                                 return true;
                             }
                             if (!data.isEmpty()) {
-                                StreamData content = ResponseUtil.parseStreamContentFromData(data);
+                                StreamData content = AIResponseUtil.parseStreamContentFromData(data);
                                 if (content != null && !content.isEmpty()) {
                                     if (firstEventTag.get()) {
                                         firstEventTag.set(false);
@@ -176,6 +185,8 @@ public class StreamTest {
 
                     }
 
+       
+
                     /**
                      * 处理异常
                      * @param throwable 异常
@@ -185,7 +196,7 @@ public class StreamTest {
                      * @return
                      */
                     @Override
-                    public boolean handleException(Throwable throwable, FluxSink<String> sink, BooleanWrapperInf firstEventTag) {
+                    public boolean handleException(Object requestBody, Throwable throwable, FluxSink<String> sink, BooleanWrapperInf firstEventTag) {
                         logger.error("错误: " + throwable.getMessage(),throwable);
                         if(firstEventTag.get()){
                             firstEventTag.set(false);
@@ -262,7 +273,7 @@ public class StreamTest {
 //				"thinking_budget": 81920},
 //		requestMap.put("max_tokens", 2048);
 //		requestMap.put("temperature", 0.7);
-        Flux<ServerEvent> flux = HttpRequestProxy.streamChatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
                     if(!chunk.isDone())
@@ -277,6 +288,56 @@ public class StreamTest {
 
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         Thread.sleep(100000000);
+
+    }
+
+
+    public static void qwenvJiutian() throws InterruptedException, IOException {
+        String message  = "识别图片内容";
+        AIAgent aiAgent = new AIAgent();
+        ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
+        imageVLAgentMessage.setMessage(message);
+
+         
+        //九天模型参考文档：https://jiutian.10086.cn/portal/common-helpcenter#/document/1160?platformCode=DMX_TYZX
+        String completionsUrl =  "/largemodel/moma/api/v3/image/text";
+        String model = "LLMImage2Text";
+        imageVLAgentMessage.setModel( model);
+    // 构建消息历史列表，包含之前的会话记忆
+
+        String imageUrl = FileUtil.getFileContent("C:\\workspace\\bbossgroups\\bboss-demos\\etl-elasticsearch\\httpproxy-nacos\\src\\main\\resources\\image.txt");
+ 
+
+
+   
+
+        if(SimpleStringUtil.isNotEmpty(imageUrl)) {
+            imageVLAgentMessage.addImageUrl(imageUrl);
+        }
+         
+
+        ServerEvent serverEvent = aiAgent.imageParser("jiutian",completionsUrl,imageVLAgentMessage);
+         logger.info(serverEvent.getData());
+
+    }
+
+    public static void chatByJiutian() throws InterruptedException, IOException {
+        String message  = "介绍bboss";
+        AIAgent aiAgent = new AIAgent();
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+        chatAgentMessage.setMessage(message);
+
+
+        //九天模型参考文档：https://jiutian.10086.cn/portal/common-helpcenter#/document/1160?platformCode=DMX_TYZX
+        String completionsUrl =  "/largemodel/moma/api/v3/chat/completions";
+        String model = "jiutian-lan-comv3";
+        chatAgentMessage.setModel( model);
+        chatAgentMessage.setTemperature(0.7d);
+        // 构建消息历史列表，包含之前的会话记忆
+
+
+        ServerEvent serverEvent = aiAgent.chatCompletionEvent("jiutian",completionsUrl,chatAgentMessage);
+        logger.info(serverEvent.getData());
 
     }
     public static void qwenvlCompareStream() throws InterruptedException {
@@ -342,7 +403,7 @@ public class StreamTest {
 //				"thinking_budget": 81920},
 //		requestMap.put("max_tokens", 2048);
 //		requestMap.put("temperature", 0.7);
-        Flux<ServerEvent> flux = HttpRequestProxy.streamChatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
                     if(!chunk.isDone())
@@ -395,7 +456,7 @@ public class StreamTest {
         requestMap.put("extra_body",extra_body);
 
  
-        ServerEvent serverEvent = HttpRequestProxy.chatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
         logger.info(SimpleStringUtil.object2json( serverEvent));
         
         Map flux = HttpRequestProxy.sendJsonBody("qwenvlplus",requestMap,"/compatible-mode/v1/chat/completions",Map.class);
