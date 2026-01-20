@@ -37,5 +37,6 @@ public class HttpRequestInterceptorDemo implements HttpRequestInterceptor {
     @Override
     public void process(HttpRequest request, EntityDetails entity, HttpContext context) throws HttpException, IOException {
         request.addHeader("name","test");
+        request.getRequestUri();
     }
 }
