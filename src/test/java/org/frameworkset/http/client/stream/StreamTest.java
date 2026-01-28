@@ -18,10 +18,7 @@ package org.frameworkset.http.client.stream;
 import com.frameworkset.util.FileUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
-import org.frameworkset.spi.ai.model.ChatAgentMessage;
-import org.frameworkset.spi.ai.model.ImageVLAgentMessage;
-import org.frameworkset.spi.ai.model.ServerEvent;
-import org.frameworkset.spi.ai.model.StreamData;
+import org.frameworkset.spi.ai.model.*;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.MessageBuilder;
@@ -34,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -53,7 +51,8 @@ public class StreamTest {
 //        qwenvl();
 //        callChatDeepseekSimple();
 //        qwenvJiutian();
-        chatByJiutian();
+//        chatByJiutian();
+        audioFileRecognition();
     }
     public static void callDeepseekSimple() throws InterruptedException {
         //定义问题变量
@@ -465,5 +464,60 @@ public class StreamTest {
         String data = HttpRequestProxy.sendJsonBody("qwenvlplus",requestMap,"/compatible-mode/v1/chat/completions",String.class);
         logger.info(SimpleStringUtil.object2json( data));
     }
-    
+
+    /**
+     * 音频识别功能
+     * https://bailian.console.aliyun.com/?spm=5176.29597918.J_SEsSjsNv72yRuRFS2VknO.2.74ba7b08ig5jxD&tab=doc#/doc/?type=model&url=2979031
+ 
+     * @return
+     */
+    public static void audioFileRecognition() throws IOException {
+//        String selectedModel = "zhipu";        
+        String selectedModel = "qwenvlplus"; 
+        Boolean enableStream = false;
+        
+        String message = "介绍音频内容";
+        List sessionMemory = new ArrayList<>();
+
+        AudioSTTAgentMessage audioSTTAgentMessage = new AudioSTTAgentMessage();
+        audioSTTAgentMessage.setStream(enableStream);
+        String model = null;
+        String completionUrl = null;
+        File audio = new File("C:\\data\\ai\\aigenfiles\\audio\\de40c4238b3b48bfb4e5224122eff4c4.wav");
+        audioSTTAgentMessage.setAudio(audio);
+        audioSTTAgentMessage.setContentType("audio/wav");
+        if(selectedModel.equals("qwenvlplus")){
+            model = "qwen3-asr-flash";
+            completionUrl = "/api/v1/services/aigc/multimodal-generation/generation";
+            //设置音频文件内容
+
+            //直接设置音频url地址
+//       audioSTTAgentMessage.setAudio("https://dashscope.oss-cn-beijing.aliyuncs.com/audios/welcome.mp3");
+
+
+            audioSTTAgentMessage.addMapParameter("asr_options","enable_itn",true);
+            audioSTTAgentMessage.addParameter("incremental_output", true);
+            audioSTTAgentMessage.setResultFormat( "message");
+
+        }
+        else if(selectedModel.equals("zhipu")){
+            model = "glm-asr-2512";
+            completionUrl = "/api/paas/v4/audio/transcriptions";
+        }
+        audioSTTAgentMessage.setModel(model);
+        // 构建消息历史列表，包含之前的会话记忆,语音识别模型本身无法实现多轮会话，如果要多轮会话，需切换支持多轮会话的模型，例如LLM和千问图片识别模型
+        audioSTTAgentMessage.setSessionMemory(sessionMemory);
+        audioSTTAgentMessage.setSessionSize(50);
+        // 添加当前用户消息
+        audioSTTAgentMessage.setMessage( message);
+
+       
+        AIAgent aiAgent = new AIAgent();
+        ServerEvent serverEvent = aiAgent.audioParser(selectedModel,
+                        completionUrl, audioSTTAgentMessage);
+
+        logger.info(serverEvent.getData());
+    }
+
+
 }
