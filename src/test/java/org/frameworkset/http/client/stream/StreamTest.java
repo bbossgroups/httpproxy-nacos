@@ -45,32 +45,29 @@ public class StreamTest {
         //加载配置文件，启动负载均衡器,应用中只需要执行一次
         HttpRequestProxy.startHttpPools("application-stream.properties");
 //        callDeepseekSimple();
+//        callChatDeepseekSimple();
+//        testCustom();
 //        callguijiSimple();
 //        qwenvl();
+        qwenvlCompareStream();
 //        qwenvlCompare();
-//        qwenvl();
 //        callChatDeepseekSimple();
 //        qwenvJiutian();
 //        chatByJiutian();
-        audioFileRecognition();
+//        audioFileRecognition();
     }
     public static void callDeepseekSimple() throws InterruptedException {
         //定义问题变量
         String message = "介绍一下bboss jobflow";
         //设置模型调用参数，
-        Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("model", "deepseek-chat");//指定模型
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+        chatAgentMessage.setModel("deepseek-chat");
+        chatAgentMessage.setPrompt(message);
 
-        List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
-        messages.add(userMessage);
-
-        requestMap.put("messages", messages);
-        requestMap.put("stream", true);
-        requestMap.put("max_tokens", 2048);
-        requestMap.put("temperature", 0.7);
+        chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
+        
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        AIAgentUtil.streamChatCompletion("/chat/completions",requestMap)
+        AIAgentUtil.streamChatCompletion("deepseek",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
@@ -86,20 +83,14 @@ public class StreamTest {
         //定义问题变量
         String message = "介绍一下bboss jobflow";
         //设置模型调用参数，
-        Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("model", "deepseek-chat");//指定模型
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+        chatAgentMessage.setModel("deepseek-chat");
+        chatAgentMessage.setPrompt(message);
 
-        List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
-        messages.add(userMessage);
-
-        requestMap.put("messages", messages);
-        requestMap.put("stream", false);
-        requestMap.put("max_tokens", 2048);
-        requestMap.put("temperature", 0.7);
+        chatAgentMessage.setStream( false).setTemperature(0.7).addParameter("max_tokens", 2048);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("/chat/completions",requestMap);
-
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("deepseek",chatAgentMessage);
+        logger.info(serverEvent.getData());
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         Thread.sleep(100000000);
     }
@@ -108,20 +99,14 @@ public class StreamTest {
         //定义问题变量
         String message = "介绍一下bboss jobflow";
         //设置模型调用参数，
-        Map<String, Object> requestMap = new HashMap<>();
-//        requestMap.put("model", "deepseek-ai/DeepSeek-V3.2-Exp");//指定模型
-        requestMap.put("model", "Qwen/Qwen3-Next-80B-A3B-Instruct");//指定模型
-        
-        List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
-        messages.add(userMessage);
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+        chatAgentMessage.setModel("Qwen/Qwen3-Next-80B-A3B-Instruct");
+        chatAgentMessage.setPrompt(message);
 
-        requestMap.put("messages", messages);
-        requestMap.put("stream", true);
-        requestMap.put("max_tokens", 2048);
-        requestMap.put("temperature", 0.7);
+        chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
+      
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        AIAgentUtil.streamChatCompletion("guiji","/v1/chat/completions",requestMap)
+        AIAgentUtil.streamChatCompletion("guiji",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
@@ -135,20 +120,16 @@ public class StreamTest {
         //定义问题变量
         String message = "介绍一下bboss jobflow";
         //设置模型调用参数，
-        Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("model", "deepseek-chat");//指定模型
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+        chatAgentMessage.setModel("deepseek-chat");
+        chatAgentMessage.setPrompt(message);
 
-        List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = MessageBuilder.buildUserMessage( message);
-        messages.add(userMessage);
-
-        requestMap.put("messages", messages);
-        requestMap.put("stream", true);
-        requestMap.put("max_tokens", 2048);
-        requestMap.put("temperature", 0.7);
+        chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
+        
+        
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题，可以自定义每次返回的片段解析方法
         //处理数据行,如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
-        AIAgentUtil.streamChatCompletion("/chat/completions",requestMap,new BaseStreamDataHandler<String>() {
+        AIAgentUtil.streamChatCompletion("deepseek",chatAgentMessage,new BaseStreamDataHandler<String>() {
                     /**
                      * 处理数据行
                      * @param line 数据行
@@ -228,51 +209,20 @@ public class StreamTest {
 //		},
 //		{"type": "text", "text": "这道题怎么解答？"},
 //            ]
-        List content = new ArrayList<>();
-        Map contentData = new LinkedHashMap();
-        contentData.put("type", "image_url");
-        contentData.put("image_url", new HashMap<String, String>(){{
-            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-        }});
-        content.add(contentData);
-//		content.add(new HashMap<String, Object>(){{
-//			put("type", "image_url");
-//			put("image_url", new HashMap<String, String>(){{
-//				put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-//			}});
-//		}});
-        contentData = new LinkedHashMap();
-        contentData.put("type", "text");
-        contentData.put("text", message);;
-        content.add(contentData);
+
+        ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
+        imageVLAgentMessage.setModel( "qwen3-vl-plus");
+        imageVLAgentMessage.setPrompt( message);
+        imageVLAgentMessage.addImageUrl("https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        imageVLAgentMessage.setStream(true);
 
 
-        Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("model", "qwen3-vl-plus");
-
-        List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("content", content);
-        messages.add(userMessage);
-
-
-
-        requestMap.put("messages", messages);
-        requestMap.put("stream", true);
 
         // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
-        Map extra_body = new LinkedHashMap();
-        extra_body.put("enable_thinking",true);
-        extra_body.put("thinking_budget",81920);
-        requestMap.put("extra_body",extra_body);
-
-//		{
-//				'enable_thinking': True,
-//				"thinking_budget": 81920},
-//		requestMap.put("max_tokens", 2048);
-//		requestMap.put("temperature", 0.7);
-        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+        imageVLAgentMessage.addParameter("enable_thinking", true);
+        imageVLAgentMessage.addParameter("thinking_budget", 81920);
+         
+        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus",imageVLAgentMessage);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
                     if(!chunk.isDone())
@@ -295,11 +245,10 @@ public class StreamTest {
         String message  = "识别图片内容";
         AIAgent aiAgent = new AIAgent();
         ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
-        imageVLAgentMessage.setMessage(message);
+        imageVLAgentMessage.setPrompt(message);
 
          
         //九天模型参考文档：https://jiutian.10086.cn/portal/common-helpcenter#/document/1160?platformCode=DMX_TYZX
-        String completionsUrl =  "/largemodel/moma/api/v3/image/text";
         String model = "LLMImage2Text";
         imageVLAgentMessage.setModel( model);
     // 构建消息历史列表，包含之前的会话记忆
@@ -315,7 +264,7 @@ public class StreamTest {
         }
          
 
-        ServerEvent serverEvent = aiAgent.imageParser("jiutian",completionsUrl,imageVLAgentMessage);
+        ServerEvent serverEvent = aiAgent.imageParser("jiutian",imageVLAgentMessage);
          logger.info(serverEvent.getData());
 
     }
@@ -324,85 +273,41 @@ public class StreamTest {
         String message  = "介绍bboss";
         AIAgent aiAgent = new AIAgent();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
-        chatAgentMessage.setMessage(message);
+        chatAgentMessage.setPrompt(message);
 
 
         //九天模型参考文档：https://jiutian.10086.cn/portal/common-helpcenter#/document/1160?platformCode=DMX_TYZX
-        String completionsUrl =  "/largemodel/moma/api/v3/chat/completions";
         String model = "jiutian-lan-comv3";
         chatAgentMessage.setModel( model);
         chatAgentMessage.setTemperature(0.7d);
         // 构建消息历史列表，包含之前的会话记忆
 
 
-        ServerEvent serverEvent = aiAgent.chatCompletionEvent("jiutian",completionsUrl,chatAgentMessage);
+        ServerEvent serverEvent = aiAgent.chatCompletionEvent("jiutian",chatAgentMessage);
         logger.info(serverEvent.getData());
 
     }
     public static void qwenvlCompareStream() throws InterruptedException {
         String message  = "介绍两个图片内容并比对相似度,以json格式返回结果";
-//		
-//		[
-//		{
-//			"type": "image_url",
-//				"image_url": {
-//			"url": "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg"
-//		},
-//		},
-//		{"type": "text", "text": "这道题怎么解答？"},
-//            ]
-        List content = new ArrayList<>();
-        Map contentData = new LinkedHashMap();
-        contentData.put("type", "image_url");
-        contentData.put("image_url", new HashMap<String, String>(){{
-            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-        }});
-        content.add(contentData);
-
-        contentData = new LinkedHashMap();
-        contentData.put("type", "image_url");
-        contentData.put("image_url", new HashMap<String, String>(){{
-            put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-        }});
-        content.add(contentData);
-//		content.add(new HashMap<String, Object>(){{
-//			put("type", "image_url");
-//			put("image_url", new HashMap<String, String>(){{
-//				put("url", "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-//			}});
-//		}});
-        contentData = new LinkedHashMap();
-        contentData.put("type", "text");
-        contentData.put("text", message);;
-        content.add(contentData);
-
-
-        Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("model", "qwen3-vl-plus");
-
-        List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("content", content);
-        messages.add(userMessage);
+        String[] images = new String[2];
+        images[0] = "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg";
+        images[1] = "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg";
 
 
 
-        requestMap.put("messages", messages);
-        requestMap.put("stream", true);
+        ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
+        imageVLAgentMessage.setModel( "qwen3-vl-plus");
+        imageVLAgentMessage.setPrompt( message);
+        imageVLAgentMessage.addImageUrl(images[0]);
+        imageVLAgentMessage.addImageUrl(images[1]);
+        imageVLAgentMessage.setStream(true);
+
+
 
         // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
-        Map extra_body = new LinkedHashMap();
-        extra_body.put("enable_thinking",true);
-        extra_body.put("thinking_budget",81920);
-        requestMap.put("extra_body",extra_body);
-
-//		{
-//				'enable_thinking': True,
-//				"thinking_budget": 81920},
-//		requestMap.put("max_tokens", 2048);
-//		requestMap.put("temperature", 0.7);
-        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+        imageVLAgentMessage.addParameter("enable_thinking", true);
+        imageVLAgentMessage.addParameter("thinking_budget", 81920);
+        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus",imageVLAgentMessage);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
                     if(!chunk.isDone())
@@ -436,33 +341,24 @@ public class StreamTest {
         
 
 
-        Map<String, Object> requestMap = new HashMap<>();
-        requestMap.put("model", "qwen3-vl-plus");
-
-        List<Map<String, Object>> messages = new ArrayList<>();
-        Map<String, Object> userMessage = MessageBuilder.buildInputImagesMessage(message,images);     
-        messages.add(userMessage);
-
-
-
-        requestMap.put("messages", messages);
-        requestMap.put("stream", false);
-
-        // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
-        Map extra_body = new LinkedHashMap();
-        extra_body.put("enable_thinking",true);
-        extra_body.put("thinking_budget",81920);
-        requestMap.put("extra_body",extra_body);
+        ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
+        imageVLAgentMessage.setModel( "qwen3-vl-plus");
+        imageVLAgentMessage.setPrompt( message);
+        imageVLAgentMessage.addImageUrl(images[0]);
+        imageVLAgentMessage.addImageUrl(images[1]);
+        imageVLAgentMessage.setStream(false);
 
  
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("qwenvlplus","/compatible-mode/v1/chat/completions",requestMap);
+
+        // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
+        imageVLAgentMessage.addParameter("enable_thinking", true);
+        imageVLAgentMessage.addParameter("thinking_budget", 81920);
+
+        
+        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("qwenvlplus",imageVLAgentMessage);
         logger.info(SimpleStringUtil.object2json( serverEvent));
         
-        Map flux = HttpRequestProxy.sendJsonBody("qwenvlplus",requestMap,"/compatible-mode/v1/chat/completions",Map.class);
-        logger.info(SimpleStringUtil.object2json( flux));
-
-        String data = HttpRequestProxy.sendJsonBody("qwenvlplus",requestMap,"/compatible-mode/v1/chat/completions",String.class);
-        logger.info(SimpleStringUtil.object2json( data));
+         
     }
 
     /**
@@ -482,13 +378,11 @@ public class StreamTest {
         AudioSTTAgentMessage audioSTTAgentMessage = new AudioSTTAgentMessage();
         audioSTTAgentMessage.setStream(enableStream);
         String model = null;
-        String completionUrl = null;
         File audio = new File("C:\\data\\ai\\aigenfiles\\audio\\de40c4238b3b48bfb4e5224122eff4c4.wav");
         audioSTTAgentMessage.setAudio(audio);
         audioSTTAgentMessage.setContentType("audio/wav");
         if(selectedModel.equals("qwenvlplus")){
             model = "qwen3-asr-flash";
-            completionUrl = "/api/v1/services/aigc/multimodal-generation/generation";
             //设置音频文件内容
 
             //直接设置音频url地址
@@ -502,19 +396,18 @@ public class StreamTest {
         }
         else if(selectedModel.equals("zhipu")){
             model = "glm-asr-2512";
-            completionUrl = "/api/paas/v4/audio/transcriptions";
         }
         audioSTTAgentMessage.setModel(model);
         // 构建消息历史列表，包含之前的会话记忆,语音识别模型本身无法实现多轮会话，如果要多轮会话，需切换支持多轮会话的模型，例如LLM和千问图片识别模型
         audioSTTAgentMessage.setSessionMemory(sessionMemory);
         audioSTTAgentMessage.setSessionSize(50);
         // 添加当前用户消息
-        audioSTTAgentMessage.setMessage( message);
+        audioSTTAgentMessage.setPrompt( message);
 
        
         AIAgent aiAgent = new AIAgent();
         ServerEvent serverEvent = aiAgent.audioParser(selectedModel,
-                        completionUrl, audioSTTAgentMessage);
+                        audioSTTAgentMessage);
 
         logger.info(serverEvent.getData());
     }
