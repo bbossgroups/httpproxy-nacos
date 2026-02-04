@@ -49,7 +49,9 @@ public class StreamTest {
 //        testCustom();
 //        callguijiSimple();
 //        qwenvl();
-        qwenvlCompareStream();
+//        videovl();
+        videovlEvent();
+//        qwenvlCompareStream();
 //        qwenvlCompare();
 //        callChatDeepseekSimple();
 //        qwenvJiutian();
@@ -199,16 +201,7 @@ public class StreamTest {
     
     public static void qwenvl() throws InterruptedException {
         String message  = "介绍图片内容并计算结果";
-//		
-//		[
-//		{
-//			"type": "image_url",
-//				"image_url": {
-//			"url": "https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg"
-//		},
-//		},
-//		{"type": "text", "text": "这道题怎么解答？"},
-//            ]
+
 
         ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
         imageVLAgentMessage.setModel( "qwen3-vl-plus");
@@ -238,6 +231,79 @@ public class StreamTest {
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         Thread.sleep(100000000);
 
+    }
+
+    /**
+     * 同步视频解析，多轮对话
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    public static void videovlEvent() throws InterruptedException, IOException {
+        String message  = "识别视频内容,并判断视频是否包含动物叫声";
+        List<Map<String,Object>> sessions = new ArrayList<>();
+
+        
+        VideoVLAgentMessage videoVLAgentMessage = new VideoVLAgentMessage();
+        videoVLAgentMessage.setModel( "kimi-k2.5");
+        
+        videoVLAgentMessage.setPrompt( message);
+        String base64 = FileUtil.getBase64Video("C:\\data\\ai\\aigenfiles\\video\\a7afc105e4df4742814f472bcd517e03.mp4");
+        videoVLAgentMessage.addVideoUrl(base64);
+        videoVLAgentMessage.setStream(false);
+        videoVLAgentMessage.setSessionMemory(sessions).setSessionSize(50);//多轮会话
+
+
+        // 禁止思考链
+        videoVLAgentMessage.addMapParameter("thinking","type","disabled");
+
+        AIAgent aiAgent = new AIAgent();
+        //识别视频
+        ServerEvent serverEvent = aiAgent.videoParser("kimi",videoVLAgentMessage);
+        logger.info(serverEvent.getData());
+
+        //继续追问
+        videoVLAgentMessage.setPrompt("猫的颜色是什么");
+        serverEvent = aiAgent.videoParser("kimi",videoVLAgentMessage);
+        logger.info(serverEvent.getData());
+
+    }
+
+    /**
+     * 流式视频内容解析
+     * @throws InterruptedException
+     * @throws IOException
+     */
+    public static void videovl() throws InterruptedException, IOException {
+        String message  = "识别视频内容";
+        VideoVLAgentMessage videoVLAgentMessage = new VideoVLAgentMessage  ();
+        videoVLAgentMessage.setModel( "kimi-k2.5");
+        videoVLAgentMessage.setPrompt( message);
+        String base64 = FileUtil.getBase64Video("C:\\data\\ai\\aigenfiles\\video\\e3245f84e86945a18a5757fe01113585.mp4");
+        videoVLAgentMessage.addVideoUrl(base64);
+        videoVLAgentMessage.setStream(true);        
+
+        // 禁止思考链
+        videoVLAgentMessage.addMapParameter("thinking","type","disabled");
+
+        AIAgent aiAgent = new AIAgent();
+        Flux<ServerEvent> flux = aiAgent.streamVideoParser("kimi",videoVLAgentMessage);
+        flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                .doOnNext(chunk -> {
+                    if(!chunk.isDone() && chunk.getData() != null) {
+                        System.out.print(chunk.getData());
+                    }
+                    if(chunk.isDone()){
+                        System.out.println();
+                    }
+                    if(chunk.isFirst()){
+                        logger.info("ServerEvent is first event.");
+                    }
+                }) //打印流式调用返回的问题答案片段
+                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
+                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .subscribe();
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        Thread.sleep(100000000);
     }
 
 
