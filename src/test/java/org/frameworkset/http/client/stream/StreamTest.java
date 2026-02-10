@@ -50,7 +50,8 @@ public class StreamTest {
 //        callguijiSimple();
 //        qwenvl();
 //        videovl();
-        videovlEvent();
+        chatWithTools();
+//        videovlEvent();
 //        qwenvlCompareStream();
 //        qwenvlCompare();
 //        callChatDeepseekSimple();
@@ -149,7 +150,7 @@ public class StreamTest {
                                 return true;
                             }
                             if (!data.isEmpty()) {
-                                StreamData content = AIResponseUtil.parseStreamContentFromData(data);
+                                StreamData content = AIResponseUtil.parseStreamContentFromData(getStreamDataBuilder(), data);
                                 if (content != null && !content.isEmpty()) {
                                     if (firstEventTag.get()) {
                                         firstEventTag.set(false);
@@ -266,6 +267,102 @@ public class StreamTest {
         serverEvent = aiAgent.videoParser("kimi",videoVLAgentMessage);
         logger.info(serverEvent.getData());
 
+    }
+    
+    public static void chatWithTools(){
+        List<Map<String, Object>> session = new ArrayList<>();
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
+                .setPrompt("查询杭州天气，并根据天气给出穿衣、饮食以及出行建议")
+                .setSessionSize(50)
+                .setSessionMemory(session)
+                .setModel("deepseek-chat")
+                .setMaxTokens(4096);
+
+        AIAgent aiAgent = new AIAgent();
+       
+        //用户查询杭州天气
+
+        //定义工具描述，可以添加多个工具描述
+//        String tools_ = """
+//                        [
+//                            {
+//                                "type": "function",
+//                                "function": {
+//                                    "name": "get_weather",
+//                                    "description": "根据用户提供的城市信息，查询对应城市的天气预报",
+//                                    "parameters": {
+//                                        "type": "object",
+//                                        "properties": {
+//                                            "location": {
+//                                                "type": "string",
+//                                                "description": "城市或者地州, 例如：上海市"
+//                                            }
+//                                        },
+//                                        "required": ["location"]
+//                                    }
+//                                }
+//                            }
+//                        ]
+//                        """;
+//        chatAgentMessage.setTools(tools_);
+        List<FunctionToolDefine> fuctionToolDefines = new ArrayList<>();
+        FunctionToolDefine functionToolDefine = new FunctionToolDefine();
+//        functionToolDefine.setType("function");
+        functionToolDefine.putFuntionName2ndDescription("get_weather","根据用户提供的城市信息，查询对应城市的天气预报")
+//                            .putParametersType("object")
+                .putRequiredParameters("location")
+                .addParameter("location","string","城市或者地州, 例如：上海市")
+                .setFunctionCall(new FunctionCall() {
+                    @Override
+                    public Object call(Map parameters) throws Exception {
+                        return "24℃";
+                    }
+                })
+        ;
+        fuctionToolDefines.add(functionToolDefine);
+        chatAgentMessage.setTools(fuctionToolDefines);
+        
+        ServerEvent serverEvent = aiAgent.chat("deepseek", chatAgentMessage);
+        List<FunctionTool> functionTools = serverEvent.getFunctionTools();
+        chatAgentMessage.addAssistantSessionMessage(serverEvent.getContent(),functionTools);
+        
+
+ 
+
+        //提取匹配的工具信息，并调用工具
+        FunctionTool tool = functionTools.get(0);
+        String toolId = tool.getId();
+        String functionName = tool.getFunctionName();
+        Map arguments = tool.getArguments();
+        String location = (String) arguments.get("location");
+        logger.info("模拟调用函数：{}(\"{}\")，返回值为：24℃",functionName,location);
+
+        //将工具调用返回值和工具id，组装成消息记录
+        deepseekMessage = new DeepseekMessage();
+        deepseekMessage.setRole("tool");
+        deepseekMessage.setContent("24℃");
+        deepseekMessage.setTool_call_id(toolId);
+        //将消息记录添加到消息记录清单
+        deepseekMessageList.add(deepseekMessage);
+
+        //构建Deepseek服务调用报文对象
+        deepseekMessages = new DeepseekMessages();
+        deepseekMessages.setMessages(deepseekMessageList);
+
+        deepseekMessages.setModel(model);
+        deepseekMessages.setStream(stream);
+        deepseekMessages.setMax_tokens(this.max_tokens);
+        //调用Deepseek 对话api，结合用户问题和工具返回值，生成最终的问题答案
+        response = HttpRequestProxy.sendJsonBody(this.getDeepseekService(), deepseekMessages, "/chat/completions", Map.class);
+        choices = (List) response.get("choices");
+        message = (Map) ((Map) choices.get(0)).get("message");
+        deepseekMessage = new DeepseekMessage();
+        deepseekMessage.setRole("assistant");
+        deepseekMessage.setContent((String) message.get("content"));
+        //将第二个问题答案添加到工作流上下文中，保存Deepseek通话记录
+        deepseekMessageList.add(deepseekMessage);
+        //输出查询杭州天气结果以及饮食、衣着及出行建议
+        logger.info(deepseekMessage.getContent());
     }
 
     /**
