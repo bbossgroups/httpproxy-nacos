@@ -44,13 +44,32 @@ public class StreamTest {
     public static void main(String[] args) throws InterruptedException, IOException {
         //加载配置文件，启动负载均衡器,应用中只需要执行一次
         HttpRequestProxy.startHttpPools("application-stream.properties");
+
+        Map properties = new HashMap();
+
+        //deepseek为的Deepseek服务数据源名称
+        properties.put("http.poolNames","tool");
+       
+       
+
+        properties.put("tool.http.hosts","127.0.0.1:8080");///设置tool服务地址
+        properties.put("tool.http.apiKeyId","17689048891086XsDsJVgwiQcmKhOdh23DX4NT");//设置apiKey
+        properties.put("tool.http.timeoutSocket","60000");
+        properties.put("tool.http.timeoutConnection","40000");
+        properties.put("tool.http.connectionRequestTimeout","70000");
+        properties.put("tool.http.maxTotal","200");
+        properties.put("tool.http.defaultMaxPerRoute","100");
+        HttpRequestProxy.startHttpPools(properties);
 //        callDeepseekSimple();
 //        callChatDeepseekSimple();
 //        testCustom();
 //        callguijiSimple();
 //        qwenvl();
 //        videovl();
-        chatWithTools();
+//        chatWithTools("deepseek","deepseek-chat");
+
+
+        chatWithTools("qwenvlplus","qwen3-max");
 //        videovlEvent();
 //        qwenvlCompareStream();
 //        qwenvlCompare();
@@ -269,13 +288,14 @@ public class StreamTest {
 
     }
     
-    public static void chatWithTools(){
+    public static void chatWithTools(String maas,String model){
         List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt("查询杭州天气，并根据天气给出穿衣、饮食以及出行建议")
                 .setSessionSize(50)
                 .setSessionMemory(session)
-                .setModel("deepseek-chat")
+//                .setModel("deepseek-chat")
+                .setModel(model)
                 .setMaxTokens(4096);
 
         AIAgent aiAgent = new AIAgent();
@@ -305,24 +325,23 @@ public class StreamTest {
 //                        ]
 //                        """;
 //        chatAgentMessage.setTools(tools_);
-        List<FunctionToolDefine> fuctionToolDefines = new ArrayList<>();
         FunctionToolDefine functionToolDefine = new FunctionToolDefine();
 //        functionToolDefine.setType("function");
-        functionToolDefine.putFuntionName2ndDescription("get_weather","根据用户提供的城市信息，查询对应城市的天气预报")
+        functionToolDefine.funtionName2ndDescription("weather_info_query","天气查询服务，根据城市查询当地温度和天气信息")
 //                            .putParametersType("object")
-                .putRequiredParameters("location")
-                .addParameter("location","string","城市或者地州, 例如：上海市")
-                .setFunctionCall(new FunctionCall() {
-                    @Override
-                    public Object call(Map parameters) throws Exception {
-                        return "24℃";
-                    }
-                })
-        ;
-        fuctionToolDefines.add(functionToolDefine);
-        chatAgentMessage.setTools(fuctionToolDefines);
-        
-        ServerEvent serverEvent = aiAgent.chat("deepseek", chatAgentMessage);
+                .requiredParameters("location")
+                .addSubParameter("params","location","string","城市或者地州, 例如：上海市")
+                .setFunctionCall(new ToolFunctionCall() );
+        chatAgentMessage.registTool(functionToolDefine);
+        /**
+         * "thinking": {
+         *     "type": "disabled"
+         *   },
+         */
+//        chatAgentMessage.addMapParameter("thinking","type","disabled");
+        ServerEvent serverEvent = aiAgent.chat(maas, chatAgentMessage);
+        logger.info(serverEvent.getData());
+        /**
         List<FunctionTool> functionTools = serverEvent.getFunctionTools();
         chatAgentMessage.addAssistantSessionMessage(serverEvent.getContent(),functionTools);
         
@@ -336,33 +355,34 @@ public class StreamTest {
         Map arguments = tool.getArguments();
         String location = (String) arguments.get("location");
         logger.info("模拟调用函数：{}(\"{}\")，返回值为：24℃",functionName,location);
-
-        //将工具调用返回值和工具id，组装成消息记录
-        deepseekMessage = new DeepseekMessage();
-        deepseekMessage.setRole("tool");
-        deepseekMessage.setContent("24℃");
-        deepseekMessage.setTool_call_id(toolId);
-        //将消息记录添加到消息记录清单
-        deepseekMessageList.add(deepseekMessage);
-
-        //构建Deepseek服务调用报文对象
-        deepseekMessages = new DeepseekMessages();
-        deepseekMessages.setMessages(deepseekMessageList);
-
-        deepseekMessages.setModel(model);
-        deepseekMessages.setStream(stream);
-        deepseekMessages.setMax_tokens(this.max_tokens);
-        //调用Deepseek 对话api，结合用户问题和工具返回值，生成最终的问题答案
-        response = HttpRequestProxy.sendJsonBody(this.getDeepseekService(), deepseekMessages, "/chat/completions", Map.class);
-        choices = (List) response.get("choices");
-        message = (Map) ((Map) choices.get(0)).get("message");
-        deepseekMessage = new DeepseekMessage();
-        deepseekMessage.setRole("assistant");
-        deepseekMessage.setContent((String) message.get("content"));
-        //将第二个问题答案添加到工作流上下文中，保存Deepseek通话记录
-        deepseekMessageList.add(deepseekMessage);
-        //输出查询杭州天气结果以及饮食、衣着及出行建议
-        logger.info(deepseekMessage.getContent());
+//
+//        //将工具调用返回值和工具id，组装成消息记录
+//        deepseekMessage = new DeepseekMessage();
+//        deepseekMessage.setRole("tool");
+//        deepseekMessage.setContent("24℃");
+//        deepseekMessage.setTool_call_id(toolId);
+//        //将消息记录添加到消息记录清单
+//        deepseekMessageList.add(deepseekMessage);
+//
+//        //构建Deepseek服务调用报文对象
+//        deepseekMessages = new DeepseekMessages();
+//        deepseekMessages.setMessages(deepseekMessageList);
+//
+//        deepseekMessages.setModel(model);
+//        deepseekMessages.setStream(stream);
+//        deepseekMessages.setMax_tokens(this.max_tokens);
+//        //调用Deepseek 对话api，结合用户问题和工具返回值，生成最终的问题答案
+//        response = HttpRequestProxy.sendJsonBody(this.getDeepseekService(), deepseekMessages, "/chat/completions", Map.class);
+//        choices = (List) response.get("choices");
+//        message = (Map) ((Map) choices.get(0)).get("message");
+//        deepseekMessage = new DeepseekMessage();
+//        deepseekMessage.setRole("assistant");
+//        deepseekMessage.setContent((String) message.get("content"));
+//        //将第二个问题答案添加到工作流上下文中，保存Deepseek通话记录
+//        deepseekMessageList.add(deepseekMessage);
+//        //输出查询杭州天气结果以及饮食、衣着及出行建议
+//        logger.info(deepseekMessage.getContent());
+         */
     }
 
     /**
