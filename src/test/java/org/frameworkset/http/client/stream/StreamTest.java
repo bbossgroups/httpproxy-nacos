@@ -69,7 +69,9 @@ public class StreamTest {
 //        chatWithTools("deepseek","deepseek-chat");
 
 
-        chatWithTools("qwenvlplus","qwen3-max");
+//        chatWithTools("qwenvlplus","qwen3-max");
+
+        streamChatWithTools("deepseek","deepseek-chat");
 //        videovlEvent();
 //        qwenvlCompareStream();
 //        qwenvlCompare();
@@ -99,6 +101,8 @@ public class StreamTest {
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         Thread.sleep(100000000);
     }
+    
+    
 
 
     public static void callChatDeepseekSimple() throws InterruptedException {
@@ -174,7 +178,7 @@ public class StreamTest {
                                     if (firstEventTag.get()) {
                                         firstEventTag.set(false);
                                     }
-                                    sink.next(content.getData());
+                                    sink.next(content.getContent());
                                 }
                             }
                         }
@@ -341,48 +345,72 @@ public class StreamTest {
 //        chatAgentMessage.addMapParameter("thinking","type","disabled");
         ServerEvent serverEvent = aiAgent.chat(maas, chatAgentMessage);
         logger.info(serverEvent.getData());
-        /**
-        List<FunctionTool> functionTools = serverEvent.getFunctionTools();
-        chatAgentMessage.addAssistantSessionMessage(serverEvent.getContent(),functionTools);
         
+    }
 
- 
+    public static void streamChatWithTools(String maas,String model) throws InterruptedException {
+        List<Map<String, Object>> session = new ArrayList<>();
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
+                .setPrompt("查询杭州天气，并根据天气给出穿衣、饮食以及出行建议")
+                .setSessionSize(50)
+                .setSessionMemory(session)
+//                .setModel("deepseek-chat")
+                .setModel(model)
+                .setStream( true)
+                .setMaxTokens(4096);
 
-        //提取匹配的工具信息，并调用工具
-        FunctionTool tool = functionTools.get(0);
-        String toolId = tool.getId();
-        String functionName = tool.getFunctionName();
-        Map arguments = tool.getArguments();
-        String location = (String) arguments.get("location");
-        logger.info("模拟调用函数：{}(\"{}\")，返回值为：24℃",functionName,location);
-//
-//        //将工具调用返回值和工具id，组装成消息记录
-//        deepseekMessage = new DeepseekMessage();
-//        deepseekMessage.setRole("tool");
-//        deepseekMessage.setContent("24℃");
-//        deepseekMessage.setTool_call_id(toolId);
-//        //将消息记录添加到消息记录清单
-//        deepseekMessageList.add(deepseekMessage);
-//
-//        //构建Deepseek服务调用报文对象
-//        deepseekMessages = new DeepseekMessages();
-//        deepseekMessages.setMessages(deepseekMessageList);
-//
-//        deepseekMessages.setModel(model);
-//        deepseekMessages.setStream(stream);
-//        deepseekMessages.setMax_tokens(this.max_tokens);
-//        //调用Deepseek 对话api，结合用户问题和工具返回值，生成最终的问题答案
-//        response = HttpRequestProxy.sendJsonBody(this.getDeepseekService(), deepseekMessages, "/chat/completions", Map.class);
-//        choices = (List) response.get("choices");
-//        message = (Map) ((Map) choices.get(0)).get("message");
-//        deepseekMessage = new DeepseekMessage();
-//        deepseekMessage.setRole("assistant");
-//        deepseekMessage.setContent((String) message.get("content"));
-//        //将第二个问题答案添加到工作流上下文中，保存Deepseek通话记录
-//        deepseekMessageList.add(deepseekMessage);
-//        //输出查询杭州天气结果以及饮食、衣着及出行建议
-//        logger.info(deepseekMessage.getContent());
-         */
+        AIAgent aiAgent = new AIAgent();
+
+        //用户查询杭州天气
+
+        //定义工具描述，可以添加多个工具描述
+//        String tools_ = """
+//                        [
+//                            {
+//                                "type": "function",
+//                                "function": {
+//                                    "name": "get_weather",
+//                                    "description": "根据用户提供的城市信息，查询对应城市的天气预报",
+//                                    "parameters": {
+//                                        "type": "object",
+//                                        "properties": {
+//                                            "location": {
+//                                                "type": "string",
+//                                                "description": "城市或者地州, 例如：上海市"
+//                                            }
+//                                        },
+//                                        "required": ["location"]
+//                                    }
+//                                }
+//                            }
+//                        ]
+//                        """;
+//        chatAgentMessage.setTools(tools_);
+        FunctionToolDefine functionToolDefine = new FunctionToolDefine();
+//        functionToolDefine.setType("function");
+        functionToolDefine.funtionName2ndDescription("weather_info_query","天气查询服务，根据城市查询当地温度和天气信息")
+//                            .putParametersType("object")
+                .requiredParameters("location")
+                .addSubParameter("params","location","string","城市或者地州, 例如：上海市")
+                .setFunctionCall(new ToolFunctionCall() );
+        chatAgentMessage.registTool(functionToolDefine);
+        aiAgent.streamChat("deepseek",chatAgentMessage)
+                .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                .doOnNext(chunk ->{ 
+                    if(!chunk.isDone() && !chunk.finished()) {
+                         
+                        System.out.print(chunk.getData());
+                        
+                    }
+                    else{
+                        System.out.println();
+                    }
+                }) //打印流式调用返回的问题答案片段
+                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
+                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .subscribe();
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        Thread.sleep(100000000);
     }
 
     /**
