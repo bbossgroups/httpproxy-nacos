@@ -150,17 +150,17 @@ public class StreamTest {
         chatAgentMessage.setPrompt(message);
 
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
-      
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
         AIAgentUtil.streamChatCompletion("guiji",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
-                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
-                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
+                .doOnError(error ->{countDownLatch.countDown(); logger.error("错误: " + error.getMessage(),error);})
                 .subscribe();
 
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-        Thread.sleep(100000000);
+        countDownLatch.await();
     }
     public static void testCustom() throws InterruptedException {
         //定义问题变量
@@ -171,7 +171,7 @@ public class StreamTest {
         chatAgentMessage.setPrompt(message);
 
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
-        
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题，可以自定义每次返回的片段解析方法
         //处理数据行,如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
@@ -264,7 +264,7 @@ public class StreamTest {
         // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
         imageVLAgentMessage.addParameter("enable_thinking", true);
         imageVLAgentMessage.addParameter("thinking_budget", 81920);
-         
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus",imageVLAgentMessage);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
@@ -484,6 +484,7 @@ public class StreamTest {
                 .addSubParameter("params","location","string","城市或者地州, 例如：上海市")
                 .setFunctionCall(new ToolFunctionCall() );
         chatAgentMessage.registTool(functionToolDefine);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         aiAgent.streamChat(maas,chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk ->{ 
@@ -496,11 +497,17 @@ public class StreamTest {
                         System.out.println();
                     }
                 }) //打印流式调用返回的问题答案片段
-                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
-                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .doOnComplete(() -> {
+                    logger.info("\n=== 流完成 ===");
+                    countDownLatch.countDown();
+                })
+                .doOnError(error -> {
+                    logger.error("错误: " + error.getMessage(),error);
+                    countDownLatch.countDown();
+                })
                 .subscribe();
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-        Thread.sleep(100000000);
+        countDownLatch.await();
     }
 
     /**
@@ -521,6 +528,7 @@ public class StreamTest {
         videoVLAgentMessage.addMapParameter("thinking","type","disabled");
 
         AIAgent aiAgent = new AIAgent();
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         Flux<ServerEvent> flux = aiAgent.streamVideoParser("kimi",videoVLAgentMessage);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
@@ -534,11 +542,17 @@ public class StreamTest {
                         logger.info("ServerEvent is first event.");
                     }
                 }) //打印流式调用返回的问题答案片段
-                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
-                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .doOnComplete(() -> {
+                    logger.info("\n=== 流完成 ===");
+                    countDownLatch.countDown();
+                })
+                .doOnError(error -> {
+                    logger.error("错误: " + error.getMessage(),error);
+                    countDownLatch.countDown();
+                })
                 .subscribe();
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-        Thread.sleep(100000000);
+        countDownLatch.await();
     }
 
 
@@ -608,18 +622,24 @@ public class StreamTest {
         // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
         imageVLAgentMessage.addParameter("enable_thinking", true);
         imageVLAgentMessage.addParameter("thinking_budget", 81920);
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus",imageVLAgentMessage);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
                     if(!chunk.isDone())
                         System.out.print(chunk.getData());
                 }) //打印流式调用返回的问题答案片段
-                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
-                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .doOnComplete(() -> {
+                    logger.info("\n=== 流完成 ===");
+                    countDownLatch.countDown();
+                })
+                .doOnError(error -> {
+                    logger.error("错误: " + error.getMessage(),error);
+                    countDownLatch.countDown();
+                })
                 .subscribe();
-
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-        Thread.sleep(100000000);
+        countDownLatch.await();
 
     }
 
