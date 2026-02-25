@@ -67,7 +67,7 @@ public class StreamTest {
         properties.put("tool.http.maxTotal","200");
         properties.put("tool.http.defaultMaxPerRoute","100");
         HttpRequestProxy.startHttpPools(properties);
-//        callDeepseekSimple();
+        callDeepseekSimple();
 //        callChatDeepseekSimple();
 //        testCustom();
 //        callguijiSimple();
@@ -89,7 +89,7 @@ public class StreamTest {
 
         //演示没有匹配到工具的流式调用
 
-        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
+//        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
         
 //        videovlEvent();
 //        qwenvlCompareStream();
@@ -109,16 +109,17 @@ public class StreamTest {
 
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
         
+        CountDownLatch countDownLatch = new CountDownLatch(1);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
         AIAgentUtil.streamChatCompletion("deepseek",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
-                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
-                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
+                .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
+                .doOnError(error ->{countDownLatch.countDown(); logger.error("错误: " + error.getMessage(),error);})
                 .subscribe();
 
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-        Thread.sleep(100000000);
+        countDownLatch.await();
     }
     
     
@@ -137,7 +138,7 @@ public class StreamTest {
         ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("deepseek",chatAgentMessage);
         logger.info(serverEvent.getData());
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-        Thread.sleep(100000000);
+      
     }
 
     public static void callguijiSimple() throws InterruptedException {
