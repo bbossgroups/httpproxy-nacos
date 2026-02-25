@@ -16,15 +16,18 @@ package org.frameworkset.http.client.stream;
  */
 
 import com.frameworkset.util.FileUtil;
+import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
-import org.frameworkset.spi.ai.util.MessageBuilder;
+import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
 import org.frameworkset.spi.reactor.BaseStreamDataHandler;
+import org.frameworkset.spi.reactor.FluxSinkStatus;
+import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
-import org.frameworkset.spi.remote.http.ResponseUtil;
 import org.frameworkset.util.concurrent.BooleanWrapperInf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +36,11 @@ import reactor.core.publisher.FluxSink;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author biaoping.yin
@@ -71,7 +78,19 @@ public class StreamTest {
 
 //        chatWithTools("qwenvlplus","qwen3-max");
 
-        streamChatWithTools("deepseek","deepseek-chat");
+//        streamChatWithTools("deepseek","deepseek-chat");
+//        streamChatWithTools("qwenvlplus","qwen3-max");
+//        streamChatWithMcpTools("qwenvlplus","qwen3-max","查询杭州天气，并根据天气给出穿衣、饮食以及出行建议");
+//        streamChatWithMcpTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
+//        streamChatWithMcpTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
+//        streamChatWithMcpTools("qwenvlplus","qwen3-max","查询用户admin的操作日志，并进行分析");
+//        streamChatWithRemoteTools("deepseek","deepseek-chat","查询用户admin的操作日志，展示数据并进行分析");
+//        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","查询用户admin的操作日志，展示数据并进行分析");
+
+        //演示没有匹配到工具的流式调用
+
+        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
+        
 //        videovlEvent();
 //        qwenvlCompareStream();
 //        qwenvlCompare();
@@ -156,6 +175,11 @@ public class StreamTest {
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题，可以自定义每次返回的片段解析方法
         //处理数据行,如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
         AIAgentUtil.streamChatCompletion("deepseek",chatAgentMessage,new BaseStreamDataHandler<String>() {
+                    @Override
+                    public void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ChatObject chatObject, BaseStreamDataBuilder baseStreamDataBuilder, FluxSink<String> sink) {
+                        
+                    }
+
                     /**
                      * 处理数据行
                      * @param line 数据行
@@ -165,7 +189,7 @@ public class StreamTest {
                      * @return
                      */
                     @Override
-                    public boolean handle(String line, FluxSink<String> sink, BooleanWrapperInf firstEventTag) {
+                    public boolean handle(String line, FluxSink<String> sink, BooleanWrapperInf firstEventTag, FluxSinkStatus fluxSinkStatus) {
                         if (line.startsWith("data: ")) {
                             String data = line.substring(6).trim();
 
@@ -173,7 +197,7 @@ public class StreamTest {
                                 return true;
                             }
                             if (!data.isEmpty()) {
-                                StreamData content = AIResponseUtil.parseStreamContentFromData(getStreamDataBuilder(), data);
+                                StreamData content = AIResponseUtil.parseStreamContentFromData((BaseStreamDataBuilder) getStreamDataBuilder(), data);
                                 if (content != null && !content.isEmpty()) {
                                     if (firstEventTag.get()) {
                                         firstEventTag.set(false);
@@ -191,7 +215,8 @@ public class StreamTest {
 
                     }
 
-       
+
+                 
 
                     /**
                      * 处理异常
@@ -348,6 +373,70 @@ public class StreamTest {
         
     }
 
+    public static void streamChatWithRemoteTools(String maas, String model, String prompt) throws InterruptedException {
+        List<Map<String, Object>> session = new ArrayList<>();
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
+                .setPrompt(prompt)
+                .setSessionSize(50)
+                .setSessionMemory(session)
+//                .setModel("deepseek-chat")
+                .setModel(model)
+                .setStream( true)
+                .setMaxTokens(4096);
+
+        AIAgent aiAgent = new AIAgent();
+
+        chatAgentMessage.setToolsRegist(new ToolsRegist() {
+            @Override
+            public List<FunctionToolDefine> registTools() {
+                Map params = new HashMap();
+                params.put("apiKey","17689048891086XsDsJVgwiQcmKhOdh23DX4NT");
+                List<FunctionToolDefine> functionToolDefines = HttpRequestProxy.sendJsonBodyForList("tool",params,"/function/tools.api",FunctionToolDefine.class);
+//                logger.info(JsonUtil.object2jsonPretty(functionToolDefines));
+                return functionToolDefines;
+            }
+
+            @Override
+            public FunctionCall getFunctionCall(String functionName) {
+                return new ToolFunctionCall("tool");
+            }
+        });
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        aiAgent.streamChat(maas,chatAgentMessage)
+                .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                .doOnNext(chunk ->{
+                    if(!chunk.isDone() && !chunk.finished()) {
+
+                        if(chunk.getData() != null)
+                            System.out.print(chunk.getData());
+                        else{
+                            if(chunk.isToolCallsType()) {
+                                System.out.println();
+                                System.out.println("开始执行工具：");
+                            }
+                        }
+
+                    }
+                    else{
+                        System.out.println();
+                    }
+                }) //打印流式调用返回的问题答案片段
+                .doOnComplete(() -> {
+                    logger.info("\n=== 流完成 ===");
+                    countDownLatch.countDown();
+                })
+                .doOnError(error -> {
+                    logger.error("错误: " + error.getMessage(),error);
+                    countDownLatch.countDown();
+                })
+                .subscribe();
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        countDownLatch.await();
+        
+   
+    }
+
     public static void streamChatWithTools(String maas,String model) throws InterruptedException {
         List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
@@ -394,7 +483,7 @@ public class StreamTest {
                 .addSubParameter("params","location","string","城市或者地州, 例如：上海市")
                 .setFunctionCall(new ToolFunctionCall() );
         chatAgentMessage.registTool(functionToolDefine);
-        aiAgent.streamChat("deepseek",chatAgentMessage)
+        aiAgent.streamChat(maas,chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk ->{ 
                     if(!chunk.isDone() && !chunk.finished()) {
