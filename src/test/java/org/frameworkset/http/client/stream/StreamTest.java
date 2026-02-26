@@ -67,7 +67,7 @@ public class StreamTest {
         properties.put("tool.http.maxTotal","200");
         properties.put("tool.http.defaultMaxPerRoute","100");
         HttpRequestProxy.startHttpPools(properties);
-        callDeepseekSimple();
+//        callDeepseekSimple();
 //        callChatDeepseekSimple();
 //        testCustom();
 //        callguijiSimple();
@@ -77,6 +77,8 @@ public class StreamTest {
 
 
 //        chatWithTools("qwenvlplus","qwen3-max");
+//        chatWithTools("zhipu","glm-5");
+        
 
 //        streamChatWithTools("deepseek","deepseek-chat");
 //        streamChatWithTools("qwenvlplus","qwen3-max");
@@ -84,8 +86,12 @@ public class StreamTest {
 //        streamChatWithMcpTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
 //        streamChatWithMcpTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
 //        streamChatWithMcpTools("qwenvlplus","qwen3-max","查询用户admin的操作日志，并进行分析");
-//        streamChatWithRemoteTools("deepseek","deepseek-chat","查询用户admin的操作日志，展示数据并进行分析");
+        streamChatWithRemoteTools("deepseek","deepseek-chat","查询用户admin的操作日志，展示数据并进行分析");
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","查询用户admin的操作日志，展示数据并进行分析");
+
+//        streamChatWithRemoteTools("zhipu","glm-5","查询用户admin的操作日志，展示数据并进行分析");
+
+//        streamChatWithRemoteTools("kimi","kimi-k2.5","查询用户admin的操作日志，展示数据并进行分析");
 
         //演示没有匹配到工具的流式调用
 
@@ -384,7 +390,7 @@ public class StreamTest {
                 .setModel(model)
                 .setStream( true)
                 .setMaxTokens(4096);
-
+        chatAgentMessage.setThinking(true);
         AIAgent aiAgent = new AIAgent();
 
         chatAgentMessage.setToolsRegist(new ToolsRegist() {
