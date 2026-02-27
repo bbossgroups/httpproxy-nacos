@@ -71,23 +71,25 @@ public class StreamTest {
 //        callChatDeepseekSimple();
 //        testCustom();
 //        callguijiSimple();
-//        qwenvl();
+//            qwenvl(false);
 //        videovl();
 //        chatWithTools("deepseek","deepseek-chat");
 
 
-//        chatWithTools("qwenvlplus","qwen3-max");
+//        chatWithTools("qwenvlplus","qwen3.5-plus");
 //        chatWithTools("zhipu","glm-5");
         
 
-//        streamChatWithTools("deepseek","deepseek-chat");
-//        streamChatWithTools("qwenvlplus","qwen3-max");
-//        streamChatWithMcpTools("qwenvlplus","qwen3-max","查询杭州天气，并根据天气给出穿衣、饮食以及出行建议");
-//        streamChatWithMcpTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
-//        streamChatWithMcpTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
-//        streamChatWithMcpTools("qwenvlplus","qwen3-max","查询用户admin的操作日志，并进行分析");
-        streamChatWithRemoteTools("deepseek","deepseek-chat","查询用户admin的操作日志，展示数据并进行分析");
+ 
+//        streamChatWithTools("qwenvlplus","qwen3.5-plus","查询杭州天气，并根据天气给出穿衣、饮食以及出行建议");
+//        streamChatWithTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
+//        streamChatWithTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
+//        streamChatWithMcpTools("qwenvlplus","qwen3.5-plus","查询用户admin的操作日志，并进行分析");
+//        streamChatWithRemoteTools("deepseek","deepseek-chat","查询用户admin的操作日志，展示数据并进行分析");
+//        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","查询用户admin的操作日志，展示数据并进行分析");
+        
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","查询用户admin的操作日志，展示数据并进行分析");
+//        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
 
 //        streamChatWithRemoteTools("zhipu","glm-5","查询用户admin的操作日志，展示数据并进行分析");
 
@@ -96,6 +98,10 @@ public class StreamTest {
         //演示没有匹配到工具的流式调用
 
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
+//        streamChatWithRemoteTools("zhipu","glm-5","介绍bboss");
+//        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
+//        streamChatWithRemoteTools("deepseek","deepseek-chat","介绍bboss");
+//        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","介绍bboss");
         
 //        videovlEvent();
 //        qwenvlCompareStream();
@@ -255,7 +261,7 @@ public class StreamTest {
     }
 
     
-    public static void qwenvl() throws InterruptedException {
+    public static void qwenvl(boolean stream) throws InterruptedException {
         String message  = "介绍图片内容并计算结果";
 
 
@@ -263,29 +269,43 @@ public class StreamTest {
         imageVLAgentMessage.setModel( "qwen3-vl-plus");
         imageVLAgentMessage.setPrompt( message);
         imageVLAgentMessage.addImageUrl("https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
-        imageVLAgentMessage.setStream(true);
+        imageVLAgentMessage.setStream(stream);
 
 
 
-        // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
-        imageVLAgentMessage.addParameter("enable_thinking", true);
-        imageVLAgentMessage.addParameter("thinking_budget", 81920);
+        if(stream) {
+            // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
+            imageVLAgentMessage.addParameter("enable_thinking", true);
+            imageVLAgentMessage.addParameter("thinking_budget", 81920);
+        }
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus",imageVLAgentMessage);
-        flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
-                .doOnNext(chunk -> {
-                    if(!chunk.isDone())
-                        System.out.print(chunk.getData());
-                    if(chunk.isFirst()){
-                        logger.info("ServerEvent is first event.");
-                    }
-                }) //打印流式调用返回的问题答案片段
-                .doOnComplete(() -> logger.info("\n=== 流完成 ==="))
-                .doOnError(error -> logger.error("错误: " + error.getMessage(),error))
-                .subscribe();
-
-        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
-        Thread.sleep(100000000);
+        AIAgent aiAgent = new AIAgent();
+        if(stream) {
+            Flux<ServerEvent> flux = aiAgent.streamImageParser("qwenvlplus", imageVLAgentMessage);
+            flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                    .doOnNext(chunk -> {
+                        if (!chunk.isDone())
+                            System.out.print(chunk.getData());
+                        if (chunk.isFirst()) {
+                            logger.info("ServerEvent is first event.");
+                        }
+                    }) //打印流式调用返回的问题答案片段
+                    .doOnComplete(() -> {
+                        countDownLatch.countDown();
+                        System.out.println();
+                        logger.info("\n=== 流完成 ===");
+                    })
+                    .doOnError(error -> {
+                        countDownLatch.countDown();
+                        logger.error("错误: " + error.getMessage(), error);
+                    })
+                    .subscribe();
+            countDownLatch.await();
+        }
+        else{
+            ServerEvent serverEvent = aiAgent.imageParser("qwenvlplus", imageVLAgentMessage);
+            logger.info(serverEvent.getData());
+        }
 
     }
 
@@ -444,10 +464,10 @@ public class StreamTest {
    
     }
 
-    public static void streamChatWithTools(String maas,String model) throws InterruptedException {
+    public static void streamChatWithTools(String maas,String model,String prompt) throws InterruptedException {
         List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
-                .setPrompt("查询杭州天气，并根据天气给出穿衣、饮食以及出行建议")
+                .setPrompt(prompt)
                 .setSessionSize(50)
                 .setSessionMemory(session)
 //                .setModel("deepseek-chat")
@@ -495,8 +515,9 @@ public class StreamTest {
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk ->{ 
                     if(!chunk.isDone() && !chunk.finished()) {
-                         
-                        System.out.print(chunk.getData());
+                         if(chunk.getData() != null) {
+                             System.out.print(chunk.getData());
+                         }
                         
                     }
                     else{
