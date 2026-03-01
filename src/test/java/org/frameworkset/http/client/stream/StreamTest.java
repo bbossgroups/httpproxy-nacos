@@ -92,6 +92,7 @@ public class StreamTest {
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
 
 //        streamChatWithRemoteTools("zhipu","glm-5","查询用户admin的操作日志，展示数据并进行分析");
+//		streamChatWithRemoteTools("zhipu","glm-5","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
 
 //        streamChatWithRemoteTools("kimi","kimi-k2.5","查询用户admin的操作日志，展示数据并进行分析");
 
@@ -99,7 +100,7 @@ public class StreamTest {
 
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
 //        streamChatWithRemoteTools("zhipu","glm-5","介绍bboss");
-//        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
+        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
 //        streamChatWithRemoteTools("deepseek","deepseek-chat","介绍bboss");
 //        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","介绍bboss");
         
