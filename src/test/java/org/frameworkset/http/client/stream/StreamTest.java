@@ -16,15 +16,20 @@ package org.frameworkset.http.client.stream;
  */
 
 import com.frameworkset.util.FileUtil;
-import com.frameworkset.util.JsonUtil;
 import com.frameworkset.util.SimpleStringUtil;
 import org.frameworkset.spi.ai.AIAgent;
+import org.frameworkset.spi.ai.adapter.AgentAdapterFactory;
+import org.frameworkset.spi.ai.mcp.feishu.FeishuMcpRegist;
+import org.frameworkset.spi.ai.mcp.tools.MCPToolsRegist;
 import org.frameworkset.spi.ai.model.*;
+import org.frameworkset.spi.ai.store.AgentSessionStoreMemory;
 import org.frameworkset.spi.ai.tools.ToolsRegist;
 import org.frameworkset.spi.ai.util.AIAgentUtil;
 import org.frameworkset.spi.ai.util.AIResponseUtil;
 import org.frameworkset.spi.ai.util.BaseStreamDataBuilder;
+import org.frameworkset.spi.feishu.BaseFeishuConfig;
 import org.frameworkset.spi.reactor.BaseStreamDataHandler;
+import org.frameworkset.spi.reactor.DisposeEventHandler;
 import org.frameworkset.spi.reactor.FluxSinkStatus;
 import org.frameworkset.spi.remote.http.ClientConfiguration;
 import org.frameworkset.spi.remote.http.HttpRequestProxy;
@@ -51,6 +56,9 @@ public class StreamTest {
     public static void main(String[] args) throws InterruptedException, IOException {
         //加载配置文件，启动负载均衡器,应用中只需要执行一次
         HttpRequestProxy.startHttpPools("application-stream.properties");
+        
+		
+		HttpRequestProxy.startHttpPools("mcpserver.properties");
 
         Map properties = new HashMap();
 
@@ -59,7 +67,7 @@ public class StreamTest {
        
        
 
-        properties.put("tool.http.hosts","127.0.0.1:8080");///设置tool服务地址
+        properties.put("tool.http.hosts","10.13.6.4:8128");///设置tool服务地址
         properties.put("tool.http.apiKeyId","17689048891086XsDsJVgwiQcmKhOdh23DX4NT");//设置apiKey
         properties.put("tool.http.timeoutSocket","60000");
         properties.put("tool.http.timeoutConnection","40000");
@@ -71,9 +79,13 @@ public class StreamTest {
 //        callChatDeepseekSimple();
 //        testCustom();
 //        callguijiSimple();
-//            qwenvl(false);
+//          qwenvl("qwenvlplus","qwen3-vl-plus",true);
+//        qwenvl("hunyuan","hunyuan-vision",true);
 //        videovl();
 //        chatWithTools("deepseek","deepseek-chat");
+
+
+//        chatWithTools("hunyuan","hunyuan-2.0-thinking-20251109");
 
 
 //        chatWithTools("qwenvlplus","qwen3.5-plus");
@@ -84,7 +96,6 @@ public class StreamTest {
 //        streamChatWithTools("qwenvlplus","qwen3.5-plus","查询杭州天气，并根据天气给出穿衣、饮食以及出行建议");
 //        streamChatWithTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
 //        streamChatWithTools("deepseek","deepseek-chat","查询用户admin的操作日志，并进行分析");
-//        streamChatWithMcpTools("qwenvlplus","qwen3.5-plus","查询用户admin的操作日志，并进行分析");
 //        streamChatWithRemoteTools("deepseek","deepseek-chat","查询用户admin的操作日志，展示数据并进行分析");
 //        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","查询用户admin的操作日志，展示数据并进行分析");
         
@@ -100,17 +111,67 @@ public class StreamTest {
 
 //        streamChatWithRemoteTools("qwenvlplus","qwen3.5-plus","介绍bboss");
 //        streamChatWithRemoteTools("zhipu","glm-5","介绍bboss");
-        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
+//        streamChatWithRemoteTools("kimi","kimi-k2.5","介绍bboss");
 //        streamChatWithRemoteTools("deepseek","deepseek-chat","介绍bboss");
 //        streamChatWithRemoteTools("volcengine","doubao-seed-2-0-pro-260215","介绍bboss");
+		
+//		streamChatWithMcpTools("qwenvlplus","gaotie", "qwen3.5-plus", "查询高铁线路",true);
+
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询用户admin的操作日志，并进行分析",true);
+//        streamChatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询用户admin的操作日志，并进行分析",true);
+
+//        chatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议");
+//        streamChatWithMcpTools("minimax","visualops","MiniMax-M2.7","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+//        streamChatWithMcpTools("qwenvlplus","visualops","qwen3.5-plus","查询长沙天气，并根据天气给出穿衣、饮食以及出行建议",true);
+
+//        streamChatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
+//        streamChatWithMcpTools("deepseek","shuqi","deepseek-chat","推荐一部穿越小说",true);
+
+//        streamChatWithMcpTools("custom","shuqi","qwen3.5-plus","推荐一部穿越小说",true);
+
+//        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出知识库飞书定制开发和应用中的文档",true);
+        streamChatWithMcpTools("qwenvlplus","feishumcp","qwen3.5-plus","列出我的文档库中的文档，如果没有文档请创建一个测试文档",true);
+        
+//        streamChatWithMcpTools("qwenvlplus","12306","qwen3.5-plus","帮我查一下明天北京到上海的高铁",true);
+		//多智能体协同
+//		chatWithMcpTools("deepseek","12306","deepseek-chat","帮我查一下明天北京到上海的高铁",true);
         
 //        videovlEvent();
 //        qwenvlCompareStream();
-//        qwenvlCompare();
+//        qwenvlCompare("qwen3-vl-plus","qwenvlplus");
+//        qwenvlCompare("MiniMax-M2.7","minimax");
 //        callChatDeepseekSimple();
+//        callMinimaxSimple();
 //        qwenvJiutian();
 //        chatByJiutian();
 //        audioFileRecognition();
+    }
+    
+    public static void callMinimaxSimple() throws InterruptedException {
+        //MiniMax-M2.7
+        //定义问题变量
+        String message = "介绍一下bboss jobflow";
+        //设置模型调用参数，
+        ChatAgentMessage chatAgentMessage = new ChatAgentMessage();
+        chatAgentMessage.setModel("MiniMax-M2.7");
+        chatAgentMessage.setPrompt(message);
+
+        chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
+
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AIAgent aiAgent = new AIAgent();
+        //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
+        aiAgent.streamChat("minimax",chatAgentMessage)
+                .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+                .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
+                .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
+                .doOnError(error ->{countDownLatch.countDown(); logger.error("错误: " + error.getMessage(),error);})
+                .subscribe();
+
+        // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+        countDownLatch.await();
     }
     public static void callDeepseekSimple() throws InterruptedException {
         //定义问题变量
@@ -124,7 +185,8 @@ public class StreamTest {
         
         CountDownLatch countDownLatch = new CountDownLatch(1);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        AIAgentUtil.streamChatCompletion("deepseek",chatAgentMessage)
+        AIAgent aiAgent = new AIAgent();
+        aiAgent.streamChat("deepseek",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
@@ -148,7 +210,8 @@ public class StreamTest {
 
         chatAgentMessage.setStream( false).setTemperature(0.7).addParameter("max_tokens", 2048);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("deepseek",chatAgentMessage);
+        AIAgent aiAgent = new AIAgent();
+        ServerEvent serverEvent = aiAgent.chat("deepseek",chatAgentMessage);
         logger.info(serverEvent.getData());
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
       
@@ -165,7 +228,8 @@ public class StreamTest {
         chatAgentMessage.setStream( true).setTemperature(0.7).addParameter("max_tokens", 2048);
         CountDownLatch countDownLatch = new CountDownLatch(1);
         //通过bboss httpproxy响应式异步交互接口，请求Deepseek模型服务，提交问题
-        AIAgentUtil.streamChatCompletion("guiji",chatAgentMessage)
+        AIAgent aiAgent = new AIAgent();
+        aiAgent.streamChat("guiji",chatAgentMessage)
                 .doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> System.out.print(chunk)) //打印流式调用返回的问题答案片段
                 .doOnComplete(() -> {countDownLatch.countDown();System.out.println();logger.info("\n=== 流完成 ===");})
@@ -175,7 +239,15 @@ public class StreamTest {
         // 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
         countDownLatch.await();
     }
+ 
+
+    private static String getWeatherInfo(String city) {
+        // 模拟天气查询
+        return city + "今天晴，温度 15-25℃，建议穿薄外套。";
+    }
     public static void testCustom() throws InterruptedException {
+        
+        
         //定义问题变量
         String message = "介绍一下bboss jobflow";
         //设置模型调用参数，
@@ -190,7 +262,8 @@ public class StreamTest {
         //处理数据行,如果数据已经返回完毕，则返回true，指示关闭对话，否则返回false
         AIAgentUtil.streamChatCompletion("deepseek",chatAgentMessage,new BaseStreamDataHandler<String>() {
                     @Override
-                    public void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ChatObject chatObject, BaseStreamDataBuilder baseStreamDataBuilder, FluxSink<String> sink) {
+                    public void streamChatCompletionEvent(ClientConfiguration clientConfiguration, ChatObject chatObject,
+														  BaseStreamDataBuilder baseStreamDataBuilder, FluxSink<String> sink, DisposeEventHandler disposeEventHandler) {
                         
                     }
 
@@ -262,19 +335,21 @@ public class StreamTest {
     }
 
     
-    public static void qwenvl(boolean stream) throws InterruptedException {
+    public static void qwenvl(String maas,String model,boolean stream) throws InterruptedException {
         String message  = "介绍图片内容并计算结果";
 
 
         ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
-        imageVLAgentMessage.setModel( "qwen3-vl-plus");
+        imageVLAgentMessage.setModel( model);//hunyuan-vision,qwen3-vl-plus
         imageVLAgentMessage.setPrompt( message);
-        imageVLAgentMessage.addImageUrl("https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        String base64 = FileUtil.getBase64Content("C:\\data\\ai\\aigenfiles\\image\\0ac0f3af23fe4e6c8769321c7d5360c5.jpg");
+//        imageVLAgentMessage.addImageUrl("https://img.alicdn.com/imgextra/i1/O1CN01gDEY8M1W114Hi3XcN_!!6000000002727-0-tps-1024-406.jpg");
+        imageVLAgentMessage.addImageUrl(base64);
         imageVLAgentMessage.setStream(stream);
 
 
 
-        if(stream) {
+        if(stream && maas.equals("qwenvlplus")) {
             // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
             imageVLAgentMessage.addParameter("enable_thinking", true);
             imageVLAgentMessage.addParameter("thinking_budget", 81920);
@@ -282,7 +357,7 @@ public class StreamTest {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         AIAgent aiAgent = new AIAgent();
         if(stream) {
-            Flux<ServerEvent> flux = aiAgent.streamImageParser("qwenvlplus", imageVLAgentMessage);
+            Flux<ServerEvent> flux = aiAgent.streamImageParser(maas, imageVLAgentMessage);
             flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                     .doOnNext(chunk -> {
                         if (!chunk.isDone())
@@ -304,7 +379,7 @@ public class StreamTest {
             countDownLatch.await();
         }
         else{
-            ServerEvent serverEvent = aiAgent.imageParser("qwenvlplus", imageVLAgentMessage);
+            ServerEvent serverEvent = aiAgent.imageParser(maas, imageVLAgentMessage);
             logger.info(serverEvent.getData());
         }
 
@@ -327,7 +402,7 @@ public class StreamTest {
         String base64 = FileUtil.getBase64Video("C:\\data\\ai\\aigenfiles\\video\\a7afc105e4df4742814f472bcd517e03.mp4");
         videoVLAgentMessage.addVideoUrl(base64);
         videoVLAgentMessage.setStream(false);
-        videoVLAgentMessage.setSessionMemory(sessions).setSessionSize(50);//多轮会话
+        videoVLAgentMessage.setSessionStore(new AgentSessionStoreMemory());//多轮会话
 
 
         // 禁止思考链
@@ -348,12 +423,11 @@ public class StreamTest {
     public static void chatWithTools(String maas,String model){
         List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
-                .setPrompt("查询杭州天气，并根据天气给出穿衣、饮食以及出行建议")
-                .setSessionSize(50)
-                .setSessionMemory(session)
+                .setPrompt("查询杭州市天气，并根据天气给出穿衣、饮食以及出行建议")
+                .setSessionStore(new AgentSessionStoreMemory())
 //                .setModel("deepseek-chat")
                 .setModel(model)
-                .setMaxTokens(4096);
+                .setMaxTokens(65536L);
 
         AIAgent aiAgent = new AIAgent();
        
@@ -405,12 +479,11 @@ public class StreamTest {
         List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt(prompt)
-                .setSessionSize(50)
-                .setSessionMemory(session)
+                .setSessionStore(new AgentSessionStoreMemory())
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setStream( true)
-                .setMaxTokens(4096);
+                .setMaxTokens(65536L);
         chatAgentMessage.setThinking(true);
         AIAgent aiAgent = new AIAgent();
 
@@ -464,17 +537,127 @@ public class StreamTest {
         
    
     }
+	
+	public static void streamChatWithMcpTools(String maas, String mcpServer,String model, String prompt,boolean thinking) throws InterruptedException {
+		List<Map<String, Object>> session = new ArrayList<>();
+		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
+				.setPrompt(prompt)
+                .setSessionStore(new AgentSessionStoreMemory())
+//                .setModel("deepseek-chat")
+				.setModel(model)
+				.setStream( true)
+				.setMaxTokens(65536L);
+		chatAgentMessage.setThinking(thinking);
+		AIAgent aiAgent = new AIAgent();
+        MCPToolsRegist mcpToolsRegist = null;
+		//feishumcp
+        if(!mcpServer.equals("feishumcp")){
+            mcpToolsRegist = new MCPToolsRegist(mcpServer);
+        }
+        else{
+            BaseFeishuConfig baseFeishuConfig = new BaseFeishuConfig();
+//            bboss应用
+            baseFeishuConfig.setFeishuAppId("cli_a9d43b87aff89cd0")
+                    .setFeishAppSecret("gIhy0EbVfgQGlpNBN8r10gtqMKMnYCJs");
+            //企业关怀应用
+//            baseFeishuConfig.setFeishuAppId("cli_a90feb5dbcb89bc2")
+//                    .setFeishAppSecret("RNhMgNhysTgV5tmK21J6Q5LPtGeKZIsB");
+            baseFeishuConfig.addHttpConfig("http.poolNames", "feishu")
+                    .addHttpConfig("feishu.http.hosts", "https://open.feishu.cn")
+                    .addHttpConfig("feishu.http.maxTotal", 100)
+                    .addHttpConfig("feishu.http.defaultMaxPerRoute", 100)
+                    .setMcpTools("search-user,get-user,fetch-file,search-doc,create-doc,fetch-doc,update-doc,list-docs,get-comments,add-comments");
+            ;
+            
+            mcpToolsRegist = new FeishuMcpRegist("feishumcp", baseFeishuConfig);
+        }
+		chatAgentMessage.setToolsRegist(mcpToolsRegist);
+		
+		CountDownLatch countDownLatch = new CountDownLatch(1);
+		aiAgent.streamChat(maas,chatAgentMessage)
+				.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
+				.doOnNext(chunk ->{
+					if(!chunk.isDone() && !chunk.finished()) {
+						
+						if(chunk.getData() != null)
+							System.out.print(chunk.getData());
+						else{
+							if(chunk.isToolCallsType()) {
+								System.out.println();
+								System.out.println("开始执行工具：");
+							}
+						}
+						
+					}
+					else{
+						System.out.println();
+					}
+				}) //打印流式调用返回的问题答案片段
+				.doOnComplete(() -> {
+					logger.info("\n=== 流完成 ===");
+					countDownLatch.countDown();
+				})
+				.doOnError(error -> {
+					logger.error("错误: " + error.getMessage(),error);
+					countDownLatch.countDown();
+				})
+				.subscribe();
+		// 等待异步操作完成，否则流式异步方法执行后会因为主线程的退出而退出，看不到后续响应的报文
+		countDownLatch.await();
+		
+		
+	}
+	
+	public static void chatWithMcpTools(String maas, String mcpServer,String model, String prompt) throws InterruptedException {
+		ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
+				.setPrompt(prompt)
+				.setSessionStore(new AgentSessionStoreMemory())
+//                .setModel("deepseek-chat")
+				.setModel(model)
+				.setStream( false)
+				.setMaxTokens(65536L);
+		chatAgentMessage.setThinking(false);
+		
+		
+		chatAgentMessage.setToolsRegist(new MCPToolsRegist(mcpServer));//12306
+		//1.获取明天对应的日期
+		AIAgent dateAgent = new AIAgent();
+		ServerEvent serverEvent = dateAgent.chat(maas,chatAgentMessage);
+		//返回日期信息
+		String dateInfo = serverEvent.getData();
+		logger.info(dateInfo);
+		
+		
+		//2.站点信息查询智能体，
+		// 根据当前日期（2026年3月4日），明天是**2026年3月5日**。现在我来为您查询明天北京到上海的高铁车次信息。
+		AIAgent siteInfoAgent = new AIAgent();
+		chatAgentMessage.setPrompt(dateInfo);
+		serverEvent = siteInfoAgent.chat(maas,chatAgentMessage);
+		String siteInfo = serverEvent.getData();
+		logger.info(siteInfo);
+		
+		//3.高铁趟次查询智能体：
+		// 我注意到您想查询明天（2026年3月5日）北京到上海的高铁票。不过，我目前无法直接使用您提到的`search_train_tickets`接口来查询车票信息。
+		AIAgent gaotieAgent = new AIAgent();
+		chatAgentMessage.setPrompt(siteInfo);
+		
+		serverEvent = gaotieAgent.chat(maas,chatAgentMessage);
+		String gaotieInfo = serverEvent.getData();
+		logger.info(gaotieInfo);
+		
+		//5. 到此明天北京到上海的高铁趟次查询完成，接下来可以使用12306工具进行购票
+//		chatAgentMessage.setToolsRegist(new MCPToolsRegist(mcpServer));//12306Tool
+		
+	}
 
     public static void streamChatWithTools(String maas,String model,String prompt) throws InterruptedException {
-        List<Map<String, Object>> session = new ArrayList<>();
         ChatAgentMessage chatAgentMessage = new ChatAgentMessage()
                 .setPrompt(prompt)
-                .setSessionSize(50)
-                .setSessionMemory(session)
+                .setSessionStore(new AgentSessionStoreMemory())
 //                .setModel("deepseek-chat")
                 .setModel(model)
                 .setStream( true)
-                .setMaxTokens(4096);
+                .setMaxTokens(65536L);
 
         AIAgent aiAgent = new AIAgent();
 
@@ -651,7 +834,8 @@ public class StreamTest {
         imageVLAgentMessage.addParameter("enable_thinking", true);
         imageVLAgentMessage.addParameter("thinking_budget", 81920);
         CountDownLatch countDownLatch = new CountDownLatch(1);
-        Flux<ServerEvent> flux = AIAgentUtil.streamChatCompletionEvent("qwenvlplus",imageVLAgentMessage);
+        AIAgent aiAgent = new AIAgent();
+        Flux<ServerEvent> flux = aiAgent.streamImageParser("qwenvlplus",imageVLAgentMessage);
         flux.doOnSubscribe(subscription -> logger.info("开始订阅流..."))
                 .doOnNext(chunk -> {
                     if(!chunk.isDone())
@@ -671,7 +855,7 @@ public class StreamTest {
 
     }
 
-    public static void qwenvlCompare() throws InterruptedException {
+    public static void qwenvlCompare(String model,String maas) throws InterruptedException {
         String message  = "介绍两个图片内容并比对相似度,以json格式返回结果";
 //		
 //		[
@@ -691,7 +875,7 @@ public class StreamTest {
 
 
         ImageVLAgentMessage imageVLAgentMessage = new ImageVLAgentMessage();
-        imageVLAgentMessage.setModel( "qwen3-vl-plus");
+        imageVLAgentMessage.setModel( model);
         imageVLAgentMessage.setPrompt( message);
         imageVLAgentMessage.addImageUrl(images[0]);
         imageVLAgentMessage.addImageUrl(images[1]);
@@ -699,13 +883,15 @@ public class StreamTest {
 
  
 
-        // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
-        imageVLAgentMessage.addParameter("enable_thinking", true);
-        imageVLAgentMessage.addParameter("thinking_budget", 81920);
-
+        if("qwenvlplus".equals(maas)) {
+            // enable_thinking 参数开启思考过程，thinking_budget 参数设置最大推理过程 Token 数
+            imageVLAgentMessage.addParameter("enable_thinking", true);
+            imageVLAgentMessage.addParameter("thinking_budget", 81920);
+        }
+        AIAgent aiAgent = new AIAgent();
         
-        ServerEvent serverEvent = AIAgentUtil.chatCompletionEvent("qwenvlplus",imageVLAgentMessage);
-        logger.info(SimpleStringUtil.object2json( serverEvent));
+        ServerEvent serverEvent = aiAgent.imageParser(maas,imageVLAgentMessage);
+        logger.info(SimpleStringUtil.object2json( serverEvent.getData()));
         
          
     }
@@ -722,7 +908,6 @@ public class StreamTest {
         Boolean enableStream = false;
         
         String message = "介绍音频内容";
-        List sessionMemory = new ArrayList<>();
 
         AudioSTTAgentMessage audioSTTAgentMessage = new AudioSTTAgentMessage();
         audioSTTAgentMessage.setStream(enableStream);
@@ -748,8 +933,7 @@ public class StreamTest {
         }
         audioSTTAgentMessage.setModel(model);
         // 构建消息历史列表，包含之前的会话记忆,语音识别模型本身无法实现多轮会话，如果要多轮会话，需切换支持多轮会话的模型，例如LLM和千问图片识别模型
-        audioSTTAgentMessage.setSessionMemory(sessionMemory);
-        audioSTTAgentMessage.setSessionSize(50);
+        audioSTTAgentMessage.setSessionStore(new AgentSessionStoreMemory());
         // 添加当前用户消息
         audioSTTAgentMessage.setPrompt( message);
 
